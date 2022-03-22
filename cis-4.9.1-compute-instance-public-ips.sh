@@ -6,9 +6,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID;
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
-	INSTANCE_NAME=$(echo $INSTANCES | jq '.[]' | jq '.name');	
-	EXTERNAL_IP=$(echo $INSTANCES | jq '.[]' | jq '.networkInterfaces[].accessConfigs[]');
-	
+	INSTANCE_NAME=$(echo $INSTANCES | jq '.[]' | jq '.name');
+	EXTERNAL_IP=$(echo $INSTANCES | jq 'select(".[].networkInterfaces[].accessConfigs[].name != ''")' | jq '.[].networkInterfaces[].accessConfigs');
+
 	if [[ $INSTANCE_NAME != "" ]]; then
 		echo "Compute instances for Project $PROJECT_ID";
 		echo "";
