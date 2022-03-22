@@ -3,7 +3,7 @@
 declare LOCATIONS=$(gcloud kms locations list --format="flattened(locationId)" | grep location_id | cut -d " " -f2)
 
 for LOCATION in $LOCATIONS; do
-	echo "Keysrings for Location $LOCATION"
+	echo "Keyrings for Location $LOCATION"
 	echo ""
 	
 	declare KEYRINGS=$(gcloud kms keyrings list --location=$LOCATION --format="flattened()" | grep key_id | cut -d " " -f 2)
