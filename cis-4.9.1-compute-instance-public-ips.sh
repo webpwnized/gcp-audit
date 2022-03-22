@@ -1,8 +1,6 @@
 #!/bin/bash
 
 declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2)
-#declare PROJECT_IDS="dev-gke-playground-qjj1pwc";
-#declare PROJECT_IDS="gcp-soc-lab-uat";
 
 for PROJECT_ID in $PROJECT_IDS; do
 	echo "Compute Instances for Project $PROJECT_ID";
