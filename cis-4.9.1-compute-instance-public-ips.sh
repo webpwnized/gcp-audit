@@ -2,24 +2,26 @@
 
 declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2)
 
-for PROJECT_ID in $PROJECT_IDS; do
-	echo "Compute Instances for Project $PROJECT_ID";
-	echo "";
-	
+for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
-	declare INSTANCES=$(gcloud compute instances list --quiet --format="csv(NAME,ZONE)");
+	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
-	for INSTANCE in $INSTANCES; do
-		NAME=$(echo $INSTANCE | cut -d "," -f1);
-		ZONE=$(echo $INSTANCE | cut -d "," -f2 | cut -d / -f7);
-
-		if [[ $ZONE != "zone" ]]; then
-			echo "Project $PROJECT_ID";
-			echo "External network interfaces for Instance $NAME";
-			echo "";
-			gcloud compute instances describe $NAME --zone $ZONE --format="json" | jq '.name,.networkInterfaces[].accessConfigs';
-			echo "";
-			sleep 1;
+	INSTANCE_NAME=$(echo $INSTANCES | jq '.[]' | jq '.name');	
+	EXTERNAL_IP=$(echo $INSTANCES | jq '.[]' | jq '.networkInterfaces[].accessConfigs[]');
+	
+	if [[ $INSTANCE_NAME != "" ]]; then
+		echo "Compute instances for Project $PROJECT_ID";
+		echo "";
+		echo "Compute instance $INSTANCE_NAME";
+		if [[ $EXTERNAL_IP != "" ]]; then
+			echo "External IP Addresses: $EXTERNAL_IP";
+		else
+			echo "No external IP found";
 		fi
-	done;
+		echo "";
+		sleep 1;
+	else
+		echo "Project $PROJECT_ID: No compute instance found";
+	fi
 done;
+
