@@ -6,11 +6,16 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	gcloud config set project $PROJECT_ID;
 
-	declare RESULTS=$(gcloud compute firewall-rules list --format="json");
+	declare RESULTS=$(gcloud compute firewall-rules list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
 		
-		echo "Firewall rules for $PROJECT_ID";
+		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq '.name');
+		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq '.labels.app');
+		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq '.labels.adid');
+
+		echo "Firewall rules for project $PROJECT_ID";
 		echo "";
 		
 		echo $RESULTS | jq -rc '.[]' | while IFS='' read FIREWALL_RULE;do
@@ -27,6 +32,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 			DISABLED=$(echo $FIREWALL_RULE | jq '.disabled');
 			
 			echo "Name: $NAME ($DIRECTION)";
+			echo "Project Name: $PROJECT_NAME";
+			echo "Project Application: $PROJECT_APPLICATION";
+			echo "Project Owner: $PROJECT_OWNER";
 			if [[ $ALLOWED != "null" ]]; then echo "Allowed: $ALLOWED"; fi;
 			if [[ $DENIED != "null" ]]; then echo "Denied: $DENIED"; fi;
 			if [[ $SOURCE_RANGES != "null" ]]; then echo "Source Ranges: $SOURCE_RANGES"; fi;
