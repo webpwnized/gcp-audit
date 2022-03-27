@@ -1,10 +1,9 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-	echo "Usage: $0 ORGANIZATION_ID"
-	exit
-fi
+ORGANIZATION_IDS=$(gcloud organizations list --format="flattened(ID)" | grep id | cut -d " " -f 2 | cut -d "/" -f 2);
 
-ORGANIZATION_ID=$1
-
-gcloud resource-manager folders list --organization $ORGANIZATION_ID
+for ORGANIZATION_ID in $ORGANIZATION_IDS; do
+	gcloud resource-manager folders list --organization $ORGANIZATION_ID
+	echo "";
+	sleep 1;
+done;
