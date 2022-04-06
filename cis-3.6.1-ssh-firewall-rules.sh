@@ -13,29 +13,29 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if [[ $RESULTS != "[]" ]]; then
 		
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq '.name');
-		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq '.labels.app');
-		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq '.labels.adid');
+		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
+		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 		echo $SEPARATOR;
 		echo "Firewall rules for project $PROJECT_ID";
 		echo "";
 		
-		echo $RESULTS | jq -rc '.[]' | while IFS='' read FIREWALL_RULE;do
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read FIREWALL_RULE;do
 
 			ALLOWED_LABEL="";
 			DENIED_LABEL="";
 		
-			NAME=$(echo $FIREWALL_RULE | jq '.name');
-			ALLOWED=$(echo $FIREWALL_RULE | jq -c '.allowed');
-			DENIED=$(echo $FIREWALL_RULE | jq -c '.denied');
-			DIRECTION=$(echo $FIREWALL_RULE | jq '.direction');
-			LOG_CONFIG=$(echo $FIREWALL_RULE | jq '.logConfig.enable');
-			SOURCE_RANGES=$(echo $FIREWALL_RULE | jq -c '.sourceRanges');
-			SOURCE_TAGS=$(echo $FIREWALL_RULE | jq -c '.sourceTags');
-			DEST_RANGES=$(echo $FIREWALL_RULE | jq -c '.destinationRanges');
-			DEST_TAGS=$(echo $FIREWALL_RULE | jq -c '.sourceTags');
-			DISABLED=$(echo $FIREWALL_RULE | jq '.disabled');
+			NAME=$(echo $FIREWALL_RULE | jq -rc '.name');
+			ALLOWED=$(echo $FIREWALL_RULE | jq -rc '.allowed');
+			DENIED=$(echo $FIREWALL_RULE | jq -rc '.denied');
+			DIRECTION=$(echo $FIREWALL_RULE | jq -rc '.direction');
+			LOG_CONFIG=$(echo $FIREWALL_RULE | jq -rc '.logConfig.enable');
+			SOURCE_RANGES=$(echo $FIREWALL_RULE | jq -rc '.sourceRanges');
+			SOURCE_TAGS=$(echo $FIREWALL_RULE | jq -rc '.sourceTags');
+			DEST_RANGES=$(echo $FIREWALL_RULE | jq -rc '.destinationRanges');
+			DEST_TAGS=$(echo $FIREWALL_RULE | jq -rc '.sourceTags');
+			DISABLED=$(echo $FIREWALL_RULE | jq -rc '.disabled');
 			HAS_INTERNET_SOURCE=$(echo $SOURCE_RANGES | jq '.[]' | jq 'select(. | contains("0.0.0.0/0"))');
 			ALLOWS_SSH=$(echo $ALLOWED | jq 'map(.ports)' | jq '.[] | index("22")');
 			ALLOWS_RDP=$(echo $ALLOWED | jq 'map(.ports)' | jq '.[] | index("3389")');
