@@ -1,7 +1,6 @@
 #!/bin/bash
 
 declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
-#declare PROJECT_IDS="gcp-dsi-uat";
 
 declare SEPARATOR="----------------------------------------------------------------------------------------";
 
