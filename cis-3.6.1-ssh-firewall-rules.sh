@@ -21,7 +21,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "Firewall rules for project $PROJECT_ID";
 		echo "";
 		
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read FIREWALL_RULE;do
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r FIREWALL_RULE;do
 
 			ALLOWED_LABEL="";
 			DENIED_LABEL="";

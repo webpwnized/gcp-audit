@@ -4,24 +4,38 @@ declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | gr
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
-	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
+	declare ADDRESSES=$(gcloud compute addresses list --quiet --format="json");
 
-	INSTANCE_NAME=$(echo $INSTANCES | jq '.[]' | jq '.name');
-	EXTERNAL_IP=$(echo $INSTANCES | jq 'select(".[].networkInterfaces[].accessConfigs[].name != ''")' | jq '.[].networkInterfaces[].accessConfigs');
+	if [[ $ADDRESSES != "[]" ]]; then
+	
+		echo "---------------------------------------------------------------------------------";
+		echo "Addresses for Project $PROJECT_ID";
+		echo "---------------------------------------------------------------------------------";
 
-	if [[ $INSTANCE_NAME != "" ]]; then
-		echo "Compute instances for Project $PROJECT_ID";
+		echo $ADDRESSES | jq -rc '.[]' | while IFS='' read -r ADDRESS;do
+		
+			NAME=$(echo $ADDRESS | jq -rc '.name');
+			IP_ADDRESS=$(echo $ADDRESS | jq -rc '.address');
+			ADDRESS_TYPE=$(echo $ADDRESS | jq -rc '.addressType');
+			KIND=$(echo $ADDRESS | jq -rc '.kind');
+			STATUS=$(echo $ADDRESS | jq -rc '.status');
+			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description');
+			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion');
+
+			if [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
+				echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
+				echo "Name: $NAME";
+				if [[ $DESCRIPTION != $NAME && $DESCRIPTION != "" ]]; then echo "Description: $DESCRIPTION"; fi;
+				echo "Status: $STATUS";
+				if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
+				echo "";
+			fi;
+		done;
 		echo "";
-		echo "Compute instance $INSTANCE_NAME";
-		if [[ $EXTERNAL_IP != "" ]]; then
-			echo "External IP Addresses: $EXTERNAL_IP";
-		else
-			echo "No external IP found";
-		fi
-		echo "";
-		sleep 1;
 	else
-		echo "Project $PROJECT_ID: No compute instance found";
-	fi
+		echo "No external addresses found for Project $PROJECT_ID";
+		echo "";
+	fi;
+	sleep 1;
 done;
 
