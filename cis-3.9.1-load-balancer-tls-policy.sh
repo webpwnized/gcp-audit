@@ -1,8 +1,6 @@
 #!/bin/bash
 
 declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
-declare PROJECT_IDS="gcp-xolt-cla10-prod";
-
 declare SEPARATOR="----------------------------------------------------------------------------------------";
 
 for PROJECT_ID in $PROJECT_IDS; do
@@ -72,7 +70,33 @@ for PROJECT_ID in $PROJECT_IDS; do
 		
 		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r SSL_PROXY;do
 			NAME=$(echo $SSL_PROXY | jq -rc '.name');
-			echo "Name: $NAME";
+			SSL_POLICY=$(echo $SSL_PROXY | jq -rc '.sslPolicy');
+
+			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
+
+			if [[ $SSL_POLICY == "null" ]]; then
+				echo "Violation: Using default TLS policy";
+			else
+				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
+				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
+				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
+				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
+
+				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "Violation: Using insecure TLS policy"; fi;
+				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
+					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
+						echo "Note: Secure TLS policy detected"; 
+					else
+						"Violation: Using insecure TLS policy"; 
+					fi;
+				fi;
+				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;
+				if [[ $SSL_POLICY_PROFILE == "CUSTOM" ]]; then
+					echo "Warning: Custom TLS policy. Insecure ciphers listed below";
+					echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] | select(. | test("^TLS_RSA_"))';
+				fi;
+			fi;
+			echo "";
 		done;
 		echo "";
 	else
@@ -84,8 +108,6 @@ for PROJECT_ID in $PROJECT_IDS; do
 	declare RESULTS=$(gcloud compute target-https-proxies list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
-	
-		echo $RESULTS | jq '.';
 		
 		echo $SEPARATOR;
 		echo "HTTPS Load Balancers for project $PROJECT_ID";
@@ -95,9 +117,31 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r HTTPS_PROXY;do
 			NAME=$(echo $HTTPS_PROXY | jq -rc '.name');
 			SSL_POLICY=$(echo $HTTPS_PROXY | jq -rc '.sslPolicy');
-			
+
 			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
-			if [[ $SSL_POLICY == "null" ]]; then echo "Violation: Using default TLS policy"; fi;
+
+			if [[ $SSL_POLICY == "null" ]]; then
+				echo "Violation: Using default TLS policy";
+			else
+				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
+				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
+				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
+				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
+
+				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "Violation: Using insecure TLS policy"; fi;
+				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
+					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
+						echo "Note: Secure TLS policy detected"; 
+					else
+						"Violation: Using insecure TLS policy"; 
+					fi;
+				fi;
+				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;
+				if [[ $SSL_POLICY_PROFILE == "CUSTOM" ]]; then
+					echo "Warning: Custom TLS policy. Insecure ciphers listed below";
+					echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] | select(. | test("^TLS_RSA_"))';
+				fi;
+			fi;
 			echo "";
 		done;
 		echo "";
