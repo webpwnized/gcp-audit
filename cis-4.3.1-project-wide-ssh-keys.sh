@@ -15,14 +15,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
 		
 			NAME=$(echo $INSTANCE | jq -rc '.name');
-			SERVICE_ACCOUNTS=$(echo $INSTANCE | jq -rc '.serviceAccounts[].email');
-			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
-
-			echo "Instance Name: $NAME";
-			echo "Service Accounts: $SERVICE_ACCOUNTS";
-			
-			if [[ $SERVICE_ACCOUNTS =~ [-]compute[@]developer[.]gserviceaccount[.]com && $IS_GKE_NODE == "false" ]]; then
-				echo "VIOLATION: Default Service Account detected"
+			BLOCK_PROJECT_WIDE_SSH_KEYS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="block-project-ssh-keys")' | jq -rc '.value' );
+						
+			if [[ $BLOCK_PROJECT_WIDE_SSH_KEYS != "true" ]]; then
+				echo "Instance Name: $NAME";
+				echo "VIOLATION: Project-wide SSH keys allowed"
 			fi;
 			echo "";
 		done;

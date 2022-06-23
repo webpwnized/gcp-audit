@@ -75,19 +75,19 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
 
 			if [[ $SSL_POLICY == "null" ]]; then
-				echo "Violation: Using default TLS policy";
+				echo "VIOLATION: Using default TLS policy";
 			else
 				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
 				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
 				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
 				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
 
-				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "Violation: Using insecure TLS policy"; fi;
+				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "VIOLATION: Using insecure TLS policy"; fi;
 				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
 					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
 						echo "Note: Secure TLS policy detected"; 
 					else
-						"Violation: Using insecure TLS policy"; 
+						"VIOLATION: Using insecure TLS policy"; 
 					fi;
 				fi;
 				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;
@@ -121,19 +121,19 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
 
 			if [[ $SSL_POLICY == "null" ]]; then
-				echo "Violation: Using default TLS policy";
+				echo "VIOLATION: Using default TLS policy";
 			else
 				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
 				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
 				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
 				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
 
-				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "Violation: Using insecure TLS policy"; fi;
+				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "VIOLATION: Using insecure TLS policy"; fi;
 				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
 					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
 						echo "Note: Secure TLS policy detected"; 
 					else
-						"Violation: Using insecure TLS policy"; 
+						"VIOLATION: Using insecure TLS policy"; 
 					fi;
 				fi;
 				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;

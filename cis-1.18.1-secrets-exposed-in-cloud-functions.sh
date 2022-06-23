@@ -34,7 +34,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "Name: $NAME";
 			echo "Build Environment Variables: $BUILD_ENIVRONMENT_VARIABLES";
 			echo "Environment Variables: $ENIVRONMENT_VARIABLES";
-			if [[ $INGRESS_SETTINGS =~ "ALLOW_ALL" ]]; then echo "Violation: Cloud function allows all ingress"; fi;
+			if [[ $INGRESS_SETTINGS =~ "ALLOW_ALL" ]]; then echo "VIOLATION: Cloud function allows all ingress"; fi;
 			echo "";
 		done;
 	else

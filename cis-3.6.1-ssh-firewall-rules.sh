@@ -56,13 +56,13 @@ for PROJECT_ID in $PROJECT_IDS; do
 			if [[ $DEST_TAGS != "null" ]]; then echo "Destination Tags: $DEST_TAGS"; fi;
 			if [[ $LOG_CONFIG != "null" ]]; then echo "Logging: $LOG_CONFIG"; fi;
 			if [[ $DISABLED != "null" ]]; then echo "Disabled: $DISABLED"; fi;
-			if [[ $ALLOWED_LABEL != "" && $HAS_INTERNET_SOURCE != "" ]]; then echo "Violation: Allows acccess from entire Internet"; fi;
-			if [[ "$ALLOWS_SSH" =~ ^[0-9]+$ ]]; then echo "Violation: Rule includes port 22/SSH"; fi;
-			if [[ "$ALLOWS_RDP" =~ ^[0-9]+$ ]]; then echo "Violation: Rule includes port 3389/RDP"; fi;
-			if [[ "$ALLOWS_HTTP" =~ ^[0-9]+$ ]]; then echo "Violation: Rule includes port 80/HTTP"; fi;
-			if [[ $NAME == "default-allow-icmp" ]]; then echo "Violation: Default ICMP rule implemented"; fi;
-			if [[ $NAME == "default-allow-ssh" ]]; then echo "Violation: Default SSH rule implemented"; fi;
-			if [[ $NAME == "default-allow-rdp" ]]; then echo "Violation: Default RDP rule implemented"; fi;			
+			if [[ $ALLOWED_LABEL != "" && $HAS_INTERNET_SOURCE != "" ]]; then echo "VIOLATION: Allows acccess from entire Internet"; fi;
+			if [[ "$ALLOWS_SSH" =~ ^[0-9]+$ ]]; then echo "VIOLATION: Rule includes port 22/SSH"; fi;
+			if [[ "$ALLOWS_RDP" =~ ^[0-9]+$ ]]; then echo "VIOLATION: Rule includes port 3389/RDP"; fi;
+			if [[ "$ALLOWS_HTTP" =~ ^[0-9]+$ ]]; then echo "VIOLATION: Rule includes port 80/HTTP"; fi;
+			if [[ $NAME == "default-allow-icmp" ]]; then echo "VIOLATION: Default ICMP rule implemented"; fi;
+			if [[ $NAME == "default-allow-ssh" ]]; then echo "VIOLATION: Default SSH rule implemented"; fi;
+			if [[ $NAME == "default-allow-rdp" ]]; then echo "VIOLATION: Default RDP rule implemented"; fi;			
 			echo "";
 		done;
 	else

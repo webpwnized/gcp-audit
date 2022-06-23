@@ -32,8 +32,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Bucket: $BUCKET";
 				echo "Members: $MEMBERS";
 				echo "Role: $ROLE";
-				if [[ $ROLE =~ "allUsers" ]]; then echo "Violation: Bucket publicly exposed to allUsers"; fi;
-				if [[ $ROLE =~ "allAuthenticatedUsers" ]]; then echo "Violation: Bucket publicly exposed to allAuthenticatedUsers"; fi;
+				if [[ $ROLE =~ "allUsers" ]]; then echo "VIOLATION: Bucket publicly exposed to allUsers"; fi;
+				if [[ $ROLE =~ "allAuthenticatedUsers" ]]; then echo "VIOLATION: Bucket publicly exposed to allAuthenticatedUsers"; fi;
 				echo "";
 			done;
 		done;
