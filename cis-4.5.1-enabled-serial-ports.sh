@@ -13,15 +13,16 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "---------------------------------------------------------------------------------";
 
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
-		
+
 			NAME=$(echo $INSTANCE | jq -rc '.name');
-			BLOCK_PROJECT_WIDE_SSH_KEYS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="block-project-ssh-keys")' | jq -rc '.value' );
-						
-			if [[ $BLOCK_PROJECT_WIDE_SSH_KEYS != "true" ]]; then
+			ENABLED_SERIAL_PORTS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="serial-port-enable")' | jq -rc '.value' | tr '[:upper:]' '[:lower:]' );
+			
+			if [[ $ENABLED_SERIAL_PORTS != "0" && $ENABLED_SERIAL_PORTS != "" ]]; then
 				echo "Instance Name: $NAME";
-				echo "VIOLATION: Project-wide SSH keys allowed"
+				echo "Serial Port Setting: $ENABLED_SERIAL_PORTS";
+				echo "VIOLATION: Serial port enabled"
+				echo "";
 			fi;
-			echo "";
 		done;
 		echo "";
 	else
