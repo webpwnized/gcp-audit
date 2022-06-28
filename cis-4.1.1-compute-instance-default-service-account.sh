@@ -17,14 +17,18 @@ for PROJECT_ID in $PROJECT_IDS; do
 			NAME=$(echo $INSTANCE | jq -rc '.name');
 			SERVICE_ACCOUNTS=$(echo $INSTANCE | jq -rc '.serviceAccounts[].email');
 			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
-
-			echo "Instance Name: $NAME";
-			echo "Service Accounts: $SERVICE_ACCOUNTS";
 			
 			if [[ $SERVICE_ACCOUNTS =~ [-]compute[@]developer[.]gserviceaccount[.]com && $IS_GKE_NODE == "false" ]]; then
-				echo "VIOLATION: Default Service Account detected"
+				SCOPES=$(echo $INSTANCE | jq -rc '.serviceAccounts[].scopes[]');
+
+				echo "Instance Name: $NAME";
+				echo "Service Accounts: $SERVICE_ACCOUNTS";
+				echo "Google OAuth Scopes:";
+				echo $SCOPES;
+				echo "";
+				echo "VIOLATION: Default Service Account detected";
+				echo "";
 			fi;
-			echo "";
 		done;
 		echo "";
 	else
