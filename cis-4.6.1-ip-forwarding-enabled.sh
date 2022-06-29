@@ -16,8 +16,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 			NAME=$(echo $INSTANCE | jq -rc '.name');
 			IP_FORWARDING_ENABLED=$(echo $INSTANCE | jq -rc '.canIpForward'  | tr '[:upper:]' '[:lower:]');
+			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
 			
-			if [[ $IP_FORWARDING_ENABLED == "true" ]]; then
+			if [[ $IP_FORWARDING_ENABLED == "true"  && $IS_GKE_NODE == "false" ]]; then
 				echo "Instance Name: $NAME";
 				echo "IP Forwarding Configuration: $IP_FORWARDING_ENABLED";
 				echo "VIOLATION: IP forwarding enabled"
