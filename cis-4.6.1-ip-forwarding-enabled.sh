@@ -15,7 +15,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
 
 			NAME=$(echo $INSTANCE | jq -rc '.name');
-			IP_FORWARDING_ENABLED=$(echo $INSTANCE | jq -rc '.canIpForward'  | tr '[:upper:]' '[:lower:]');
+			IP_FORWARDING_ENABLED=$(echo $INSTANCE | jq -rc '.canIpForward' | tr '[:upper:]' '[:lower:]');
 			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
 			
 			if [[ $IP_FORWARDING_ENABLED == "true"  && $IS_GKE_NODE == "false" ]]; then
