@@ -151,7 +151,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "";
 	fi;
 	
-	sleep 1;
+	sleep 0.5;
 
 done;
 

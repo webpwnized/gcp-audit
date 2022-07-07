@@ -41,7 +41,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Status: $STATUS";
 				if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
 			else
-				echo "Skipping IP address $IP_ADDRESS ($ADDRESS_TYPE $KIND): The IP address cannot be routed externally";
+				echo "Non-issue: The IP address cannot be routed externally";
 			fi;
 			echo "";
 		done;

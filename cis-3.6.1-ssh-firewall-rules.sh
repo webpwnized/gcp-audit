@@ -70,6 +70,6 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "No firewall rules found for $PROJECT_ID";
 		echo "";
 	fi;
-	sleep 1;
+	sleep 0.5;
 done;
 

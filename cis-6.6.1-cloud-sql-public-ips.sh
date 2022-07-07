@@ -21,7 +21,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "No external IP found";
 		fi
 		echo "";
-		sleep 1;
+		sleep 0.5;
 	else
 		echo "Project $PROJECT_ID: No Cloud SQL found";
 	fi

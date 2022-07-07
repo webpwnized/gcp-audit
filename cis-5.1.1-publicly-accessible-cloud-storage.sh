@@ -42,6 +42,6 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "No storage buckets found for Project $PROJECT_ID";
 		echo "";
 	fi;
-	sleep 1;
+	sleep 0.5;
 done;
 
