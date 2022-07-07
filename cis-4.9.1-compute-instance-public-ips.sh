@@ -4,51 +4,54 @@ declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | gr
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
-	declare ADDRESSES=$(gcloud compute addresses list --quiet --format="json");
+	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
-	if [[ $ADDRESSES != "[]" ]]; then
+	if [[ $INSTANCES != "[]" ]]; then
 
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
-		echo "---------------------------------------------------------------------------------";
-		echo "External IP Addresses for Project $PROJECT_ID";
-		echo "---------------------------------------------------------------------------------";
-
-		echo $ADDRESSES | jq -rc '.[]' | while IFS='' read -r ADDRESS;do
 		
-			NAME=$(echo $ADDRESS | jq -rc '.name');
-			IP_ADDRESS=$(echo $ADDRESS | jq -rc '.address');
-			ADDRESS_TYPE=$(echo $ADDRESS | jq -rc '.addressType');
-			KIND=$(echo $ADDRESS | jq -rc '.kind');
-			STATUS=$(echo $ADDRESS | jq -rc '.status');
-			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description');
-			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion');
-			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose');
+		echo "---------------------------------------------------------------------------------";
+		echo "Instances for Project $PROJECT_ID";
+		echo "---------------------------------------------------------------------------------";
+
+		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
+
+			NAME=$(echo $INSTANCE | jq -rc '.name');			
+			EXTERNAL_NETWORK_INTERFACES=$(echo $INSTANCE | jq -rc '.networkInterfaces' | jq 'select("accessConfigs")');
+			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
 			
-			if [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
+			if [[ $IS_GKE_NODE == "false" ]]; then
+			
+				echo $EXTERNAL_NETWORK_INTERFACES | jq -rc '.[]' | while IFS='' read -r INTERFACE;do
 
-				echo "Project Name: $PROJECT_NAME";
-				echo "Project Application: $PROJECT_APPLICATION";
-				echo "Project Owner: $PROJECT_OWNER";			
-
-				echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
-				echo "Name: $NAME";
-				if [[ $PURPOSE != "null" ]]; then echo "Purpose: $PURPOSE"; fi;
-				if [[ $DESCRIPTION != $NAME && $DESCRIPTION != "" ]]; then echo "Description: $DESCRIPTION"; fi;
-				echo "Status: $STATUS";
-				if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
+					INTERFACE_NAME=$(echo $INTERFACE | jq -rc '.name');
+					NAT_IP=$(echo $INTERFACE | jq -rc '.accessConfigs[].natIP');
+					
+					if [[ $NAT_IP != "" ]]; then
+						echo "Project Name: $PROJECT_NAME";
+						echo "Project Application: $PROJECT_APPLICATION";
+						echo "Project Owner: $PROJECT_OWNER";
+						echo "Instance Name: $NAME";
+						echo "Interface Name: $INTERFACE_NAME";
+						echo "IP Address: $NAT_IP";
+						echo "VIOLATION: Exterally routable IP address detected";
+						echo "";
+					else
+						echo "Skipping interface with no external IP address";
+					fi;
+				done;
 			else
-				echo "Skipping IP address $IP_ADDRESS ($ADDRESS_TYPE $KIND): The IP address cannot be routed externally";
+				echo "Skipping GKE node $NAME";
 			fi;
-			echo "";
 		done;
+		echo "";
 	else
-		echo "No external addresses found for Project $PROJECT_ID";
+		echo "No instances found for Project $PROJECT_ID";
+		echo "";
 	fi;
-	echo "";
 	sleep 0.5;
 done;
 
