@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#if isset(--project) && $PROJECT != "":
+#	declare PROJECT_IDS="$PROJECT";
+#else
+#	declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2)
+#endif
+
 declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2)
 
 for PROJECT_ID in $PROJECT_IDS; do	
