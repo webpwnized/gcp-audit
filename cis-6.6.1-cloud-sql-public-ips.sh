@@ -1,11 +1,5 @@
 #!/bin/bash
 
-#if isset(--project) && $PROJECT != "":
-#	declare PROJECT_IDS="$PROJECT";
-#else
-#	declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2)
-#endif
-
 LONG=project:
 SHORT=p:
 OPTS=$(getopt -a -n testscript --options $SHORT --longoptions $LONG -- "$@")
@@ -24,11 +18,11 @@ do
         *)
         exit 2
     esac
-done
+done;
+
 if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
-fi
-
+fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
