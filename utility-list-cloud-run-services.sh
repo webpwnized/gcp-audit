@@ -31,7 +31,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if [[ $SERVICES != "[]" ]]; then
 	
 		echo "---------------------------------------------------------------------------------";
-		echo "SERVICES for Project $PROJECT_ID";
+		echo "Cloud Run Services for Project $PROJECT_ID";
 		echo "---------------------------------------------------------------------------------";
 
 		echo $SERVICES | jq -rc '.[]' | while IFS='' read -r SERVICE;do
@@ -40,7 +40,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 			INGRESS_SETTING=$(echo $SERVICE | jq -rc '.metadata.annotations."run.googleapis.com/ingress"');
 			
 			echo "Service Name: $NAME";
-			echo "Ingress Setting: $INGRESS_SETTING";
+			echo "Service Ingress Setting: $INGRESS_SETTING";
 						
 			if [[ $INGRESS_SETTING == "all" ]]; then
 				echo "Violation: The ingress setting is configured to ALL, which allows all requests including requests directly from the internet";
@@ -49,7 +49,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		done;
 		echo "";
 	else
-		echo "No SERVICES found for Project $PROJECT_ID";
+		echo "No Cloud Run Services found for Project $PROJECT_ID";
 		echo "";
 	fi;
 	sleep 0.5;
