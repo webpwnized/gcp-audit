@@ -33,8 +33,15 @@ for PROJECT_ID in $PROJECT_IDS; do
 	EXTERNAL_IP=$(echo $INSTANCES | jq '.[]' | jq '.ipAddresses[]' | jq 'select(.type == "PRIMARY")' | jq '.ipAddress');
 	
 	if [[ $DATABASE_NAME != "" ]]; then
-		echo "Cloud SQL instances for Project $PROJECT_ID";
-		echo "";
+	
+		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
+		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+		
+		echo "Project Name: $PROJECT_NAME";
+		echo "Project Application: $PROJECT_APPLICATION";
+		echo "Project Owner: $PROJECT_OWNER";
 		echo "Cloud SQL Instance $DATABASE_NAME";
 		echo "Version: $DATABASE_VERSION";
 		if [[ $EXTERNAL_IP != "" ]]; then

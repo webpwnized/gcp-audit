@@ -26,23 +26,30 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
-	declare PROJECT_INFO=$(gcloud compute project-info describe --format="json");
+	declare SERVICES=$(gcloud run services list --quiet --format="json");
 
-	if [[ $PROJECT_INFO != "" ]]; then
+	if [[ $SERVICES != "[]" ]]; then
 	
 		echo "---------------------------------------------------------------------------------";
-		echo "Project information for Project $PROJECT_ID";
+		echo "Cloud Run Services for Project $PROJECT_ID";
 		echo "---------------------------------------------------------------------------------";
 
-		OSLOGIN_ENABLED=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true")' );
-
-		if [[ $OSLOGIN_ENABLED == "" ]]; then
-			echo "Project Name: $PROJECT_ID";
-			echo "VIOLATION: OS Login is NOT enabled at the Project level"
-		fi;
+		echo $SERVICES | jq -rc '.[]' | while IFS='' read -r SERVICE;do
+		
+			NAME=$(echo $SERVICE | jq -rc '.metadata.name');
+			INGRESS_SETTING=$(echo $SERVICE | jq -rc '.metadata.annotations."run.googleapis.com/ingress"');
+			
+			echo "Service Name: $NAME";
+			echo "Service Ingress Setting: $INGRESS_SETTING";
+						
+			if [[ $INGRESS_SETTING == "all" ]]; then
+				echo "Violation: The ingress setting is configured to ALL, which allows all requests including requests directly from the internet";
+			fi;
+			echo "";
+		done;
 		echo "";
 	else
-		echo "No project information found for Project $PROJECT_ID";
+		echo "No Cloud Run Services found for Project $PROJECT_ID";
 		echo "";
 	fi;
 	sleep 0.5;
