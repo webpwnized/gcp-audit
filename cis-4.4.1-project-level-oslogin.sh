@@ -24,7 +24,11 @@ if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi;
 
-for PROJECT_ID in $PROJECT_IDS; do	
+for PROJECT_ID in $PROJECT_IDS; do
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+
 	gcloud config set project $PROJECT_ID;
 	declare PROJECT_INFO=$(gcloud compute project-info describe --format="json");
 
@@ -32,6 +36,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 		echo "---------------------------------------------------------------------------------";
 		echo "Project information for Project $PROJECT_ID";
+        echo "Project Application: $PROJECT_APPLICATION";
+	    echo "Project Owner: $PROJECT_OWNER";
 		echo "---------------------------------------------------------------------------------";
 
 		OSLOGIN_ENABLED=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | select(.key=="enable-oslogin") | select(.value=="TRUE")' );
