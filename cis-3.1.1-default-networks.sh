@@ -25,18 +25,20 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-	gcloud config set project $PROJECT_ID 1&>/dev/null;
-	declare RESULTS=$(gcloud compute networks list --quiet --format="flattened(NAME,SUBNET_MODE)");
-	if [[ $RESULTS =~ .*default* ]]
-	then
-	:
-		echo "Default Networks for Project $PROJECT_ID";
-		echo $RESULTS;
+	gcloud config set project $PROJECT_ID;
+	declare RESULTS=$(gcloud compute networks list --quiet --format="json" | tr [:upper:] [:lower:] | jq '.[]');
+	
+	declare SUBNET_MODE="";
+	if [[ $RESULTS != "[]" ]]; then
+		NETWORK_NAME=$(echo $RESULTS | jq '.name');
+		SUBNET_MODE=$(echo $RESULTS | jq '.x_gcloud_subnet_mode');
+	fi;
+	
+	if [[ $NETWORK_NAME == "default" ]]; then
+		echo "VIOLATION: Default network $NETWORK_NAME detected for Project $PROJECT_ID";
 		echo "";
-	elif [[ $RESULTS =~ .*LEGACY* ]] 
-	then
-		echo "Legacy Networks for Project $PROJECT_ID";
-		echo $RESULTS;		
+	elif [[ $SUBNET_MODE == "legacy" ]]; then
+		echo "VIOLATION: Legacy network $NETWORK_NAME detected for Project $PROJECT_ID";
 		echo "";
 	fi
 done;
