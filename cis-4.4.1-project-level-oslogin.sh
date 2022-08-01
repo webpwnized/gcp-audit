@@ -40,7 +40,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	    echo "Project Owner: $PROJECT_OWNER";
 		echo "---------------------------------------------------------------------------------";
 
-		OSLOGIN_ENABLED=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | select(.key=="enable-oslogin") | select(.value=="TRUE")' );
+		OSLOGIN_ENABLED=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true")' );
 
 		if [[ $OSLOGIN_ENABLED == "" ]]; then
 			echo "Project Name: $PROJECT_ID";
