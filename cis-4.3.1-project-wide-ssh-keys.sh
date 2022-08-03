@@ -25,6 +25,10 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+
 	gcloud config set project $PROJECT_ID;
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
@@ -32,6 +36,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 		echo "---------------------------------------------------------------------------------";
 		echo "Instances for Project $PROJECT_ID";
+        echo "Project Application: $PROJECT_APPLICATION";
+	    echo "Project Owner: $PROJECT_OWNER";
 		echo "---------------------------------------------------------------------------------";
 
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do

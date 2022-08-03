@@ -35,13 +35,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if [[ $RESULTS != "[]" ]]; then
 		
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 		echo $SEPARATOR;
 		echo "Cloud functions for project $PROJECT_ID";
-		echo "Project Name: $PROJECT_NAME";
 		echo "Project Application: $PROJECT_APPLICATION";
 		echo "Project Owner: $PROJECT_OWNER";
 		echo "";

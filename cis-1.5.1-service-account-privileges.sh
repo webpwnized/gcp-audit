@@ -25,7 +25,14 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+
 	echo "Project $PROJECT_ID"
+    echo "Project Application: $PROJECT_APPLICATION";
+	echo "Project Owner: $PROJECT_OWNER";
+    
 	declare ACCOUNTS=$(gcloud projects get-iam-policy $PROJECT_ID --format=json | jq -r '.bindings[] | .role, .members[]')
 	for ACCOUNT in $ACCOUNTS; do
 		if [[ $ACCOUNT =~ 'roles' ]]; then

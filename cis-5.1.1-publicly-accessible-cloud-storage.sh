@@ -26,7 +26,12 @@ fi;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 
-for PROJECT_ID in $PROJECT_IDS; do	
+for PROJECT_ID in $PROJECT_IDS; do
+
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');	
+
 	gcloud config set project $PROJECT_ID;
 
 	declare BUCKETS=$(gsutil ls);
@@ -52,6 +57,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 				ROLE=$(echo $PERMISSION | jq '.role');
 
 				echo "Project: $PROJECT_ID";
+                echo "Project Application: $PROJECT_APPLICATION";
+	            echo "Project Owner: $PROJECT_OWNER";
 				echo "Bucket: $BUCKET";
 				echo "Members: $MEMBERS";
 				echo "Role: $ROLE";
