@@ -44,30 +44,32 @@ for PROJECT_ID in $PROJECT_IDS; do
 			NAME=$(echo $INSTANCE | jq -rc '.name');			
 			EXTERNAL_NETWORK_INTERFACES=$(echo $INSTANCE | jq -rc '.networkInterfaces' | jq 'select("accessConfigs")');
 			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
-			
-			if [[ $IS_GKE_NODE == "false" ]]; then
-			
-				echo $EXTERNAL_NETWORK_INTERFACES | jq -rc '.[]' | while IFS='' read -r INTERFACE;do
+		
+			echo $EXTERNAL_NETWORK_INTERFACES | jq -rc '.[]' | while IFS='' read -r INTERFACE;do
 
+				HAS_NAT_IP=$(echo $INTERFACE | jq -rc '.accessConfigs // empty');
+
+				if [[ $HAS_NAT_IP != "" ]]; then
+					
 					INTERFACE_NAME=$(echo $INTERFACE | jq -rc '.name');
 					NAT_IP=$(echo $INTERFACE | jq -rc '.accessConfigs[].natIP');
-					
-					if [[ $NAT_IP != "" ]]; then
-						echo "Project Name: $PROJECT_NAME";
-						echo "Project Application: $PROJECT_APPLICATION";
-						echo "Project Owner: $PROJECT_OWNER";
-						echo "Instance Name: $NAME";
-						echo "Interface Name: $INTERFACE_NAME";
-						echo "IP Address: $NAT_IP";
+
+					echo "Project Name: $PROJECT_NAME";
+					echo "Project Application: $PROJECT_APPLICATION";
+					echo "Project Owner: $PROJECT_OWNER";
+					echo "Instance Name: $NAME";
+					echo "Interface Name: $INTERFACE_NAME";
+					echo "IP Address: $NAT_IP";
+					if [[ $IS_GKE_NODE == "false" ]]; then
 						echo "VIOLATION: Exterally routable IP address detected";
-						echo "";
 					else
-						echo "Skipping interface with no external IP address";
+						echo "VIOLATION: GKE cluster is not a Private Kubernetes Cluster";
 					fi;
-				done;
-			else
-				echo "Skipping GKE node $NAME";
-			fi;
+					echo "";
+				else
+					echo "Skipping interface with no external IP address";
+				fi;
+			done;
 		done;
 		echo "";
 	else
