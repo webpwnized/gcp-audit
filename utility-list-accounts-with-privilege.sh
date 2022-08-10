@@ -1,6 +1,24 @@
 #!/bin/bash
 
-ROLE=$1
+LONG=role:
+SHORT=r:
+OPTS=$(getopt -a -n testscript --options $SHORT --longoptions $LONG -- "$@")
+
+eval set -- "$OPTS"
+while :
+do
+    case "$1" in --role | -r )
+        declare ROLE="$2"
+        shift 2
+     ;;
+     -- )
+        shift;
+        break
+        ;;
+        *)
+        exit 2
+    esac
+done;
 
 if [[ $ROLE == "" ]]; then
     ROLE="owner";
