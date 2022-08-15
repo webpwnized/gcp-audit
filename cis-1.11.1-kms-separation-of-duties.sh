@@ -1,26 +1,36 @@
 #!/bin/bash
 
-declare	ROLE="cloudkms.admin"
+PROJECT_IDS="";
+DEBUG="False";
+HELP=$(cat << EOL
+	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
+EOL
+);
 
-LONG=project:
-SHORT=p:
-OPTS=$(getopt -a -n testscript --options $SHORT --longoptions $LONG -- "$@")
-
-eval set -- "$OPTS"
-while :
-do
-    case "$1" in --project | -p )
-        declare PROJECT_IDS="$2"
-        shift 2
-     ;;
-     -- )
-        shift;
-        break
-        ;;
-        *)
-        exit 2
-    esac
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") 		set -- "$@" "-h" ;;
+    "--debug") 		set -- "$@" "-d" ;;
+    "--project")   	set -- "$@" "-p" ;;
+    *)        		set -- "$@" "$arg"
+  esac
 done
+
+while getopts "hdp:" option
+do 
+    case "${option}"
+        in
+        p)
+        	PROJECT_IDS=${OPTARG};;
+        d)
+        	DEBUG="True";;
+        h)
+        	echo $HELP; 
+        	exit 0;;
+    esac;
+done;
+
 if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi
