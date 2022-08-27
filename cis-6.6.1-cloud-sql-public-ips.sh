@@ -41,7 +41,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $(gcloud services list --enabled | grep -c sqladmin.googleapis.com) == 0 ]]; then
 		echo "Cloud SQL API not enabled."
-		exit 1
+		continue
 	fi
 
 	declare INSTANCES=$(gcloud sql instances list --quiet --format="json");
