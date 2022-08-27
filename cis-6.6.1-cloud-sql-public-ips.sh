@@ -31,10 +31,6 @@ do
     esac;
 done;
 
-if [[ $(gcloud services list --enabled | grep -c sqladmin.googleapis.com) == 0 ]]; then
-	echo "Cloud SQL not enabled."
-	exit 1
-fi
 
 if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
@@ -42,6 +38,12 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID;
+
+	if [[ $(gcloud services list --enabled | grep -c sqladmin.googleapis.com) == 0 ]]; then
+		echo "Cloud SQL API not enabled."
+		continue
+	fi
+
 	declare INSTANCES=$(gcloud sql instances list --quiet --format="json");
 
 	DATABASE_NAME=$(echo $INSTANCES | jq '.[]' | jq '.name');	
