@@ -40,9 +40,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID;
 
 	if [[ $(gcloud services list --enabled | grep -c sqladmin.googleapis.com) == 0 ]]; then
-		echo "Cloud SQL API not enabled."
-		continue
-	fi
+		echo "Cloud SQL API not enabled.";
+		continue;
+	fi;
 
 	declare INSTANCES=$(gcloud sql instances list --quiet --format="json");
 

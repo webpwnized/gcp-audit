@@ -1,10 +1,9 @@
 #!/bin/bash
 
-if [[ $(gcloud services list --enabled | grep -c cloudkms) == 0 ]]; 
-then
-	echo "Cloud KMS not enabled."
-	exit 1
-fi
+if [[ $(gcloud services list --enabled | grep -c cloudkms) == 0 ]]; then
+	echo "Cloud KMS not enabled.";
+	exit 1;
+fi;
 
 declare LOCATIONS=$(gcloud kms locations list --format="flattened(locationId)" | grep location_id | cut -d " " -f2)
 
