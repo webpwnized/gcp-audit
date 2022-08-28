@@ -2,6 +2,7 @@
 
 PROJECT_IDS="";
 DEBUG="False";
+CSV="False";
 HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
 EOL
@@ -12,12 +13,13 @@ for arg in "$@"; do
   case "$arg" in
     "--help") 		set -- "$@" "-h" ;;
     "--debug") 		set -- "$@" "-d" ;;
+    "--csv") 		set -- "$@" "-c" ;;
     "--project")   	set -- "$@" "-p" ;;
     *)        		set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdp:" option
+while getopts "hdcp:" option
 do 
     case "${option}"
         in
@@ -25,6 +27,8 @@ do
         	PROJECT_IDS=${OPTARG};;
         d)
         	DEBUG="True";;
+        c)
+        	CSV="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -35,7 +39,7 @@ if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi;
 
-for PROJECT_ID in $PROJECT_IDS; do	
+for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID;
 	declare ADDRESSES=$(gcloud compute addresses list --quiet --format="json");
 
@@ -46,10 +50,12 @@ for PROJECT_ID in $PROJECT_IDS; do
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
-		echo "---------------------------------------------------------------------------------";
-		echo "External IP Addresses for Project $PROJECT_ID";
-		echo "---------------------------------------------------------------------------------";
-
+		if [[ $CSV != "True" ]]; then
+			echo "---------------------------------------------------------------------------------";
+			echo "External IP Addresses for Project $PROJECT_ID";
+			echo "---------------------------------------------------------------------------------";
+		fi;
+		
 		echo $ADDRESSES | jq -rc '.[]' | while IFS='' read -r ADDRESS;do
 		
 			NAME=$(echo $ADDRESS | jq -rc '.name');
@@ -60,28 +66,37 @@ for PROJECT_ID in $PROJECT_IDS; do
 			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description');
 			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion');
 			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose');
-			
+
 			if [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
 
-				echo "Project Name: $PROJECT_NAME";
-				echo "Project Application: $PROJECT_APPLICATION";
-				echo "Project Owner: $PROJECT_OWNER";			
+				if [[ $CSV == "True" ]]; then
+					echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"$STATUS\", \"$VERSION\"";
+				else
+					echo "Project Name: $PROJECT_NAME";
+					echo "Project Application: $PROJECT_APPLICATION";
+					echo "Project Owner: $PROJECT_OWNER";			
 
-				echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
-				echo "Name: $NAME";
-				if [[ $PURPOSE != "null" ]]; then echo "Purpose: $PURPOSE"; fi;
-				if [[ $DESCRIPTION != $NAME && $DESCRIPTION != "" ]]; then echo "Description: $DESCRIPTION"; fi;
-				echo "Status: $STATUS";
-				if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
+					echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
+					echo "Name: $NAME";
+					if [[ $PURPOSE != "null" ]]; then echo "Purpose: $PURPOSE"; fi;
+					if [[ $DESCRIPTION != $NAME && $DESCRIPTION != "" ]]; then echo "Description: $DESCRIPTION"; fi;
+					echo "Status: $STATUS";
+					if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
+					echo "";
+				fi;
 			else
-				echo "Non-issue: The IP address cannot be routed externally";
+				if [[ $CSV != "True" ]]; then
+					echo "Non-issue: The IP address cannot be routed externally";
+					echo "";
+				fi;
 			fi;
-			echo "";
 		done;
 	else
-		echo "No external addresses found for Project $PROJECT_ID";
+		if [[ $CSV != "True" ]]; then
+			echo "No external addresses found for Project $PROJECT_ID";
+			echo "";
+		fi;
 	fi;
-	echo "";
 	sleep 0.5;
 done;
 
