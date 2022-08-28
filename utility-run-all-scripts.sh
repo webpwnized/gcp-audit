@@ -53,7 +53,7 @@ AUDIT_SCRIPTS=$(ls | grep -E $FILENAME_PATTERN)
 
 for PROJECT_ID in $PROJECT_IDS; do
     echo "---- Starting Audit for $PROJECT_ID ----"
-    gcloud config set project $PROJECT_ID
+    gcloud config set project $PROJECT_ID 2>/dev/null
     AUDIT_LOG="$AUDIT_LOG_PREFIX-$PROJECT_ID.log"
 
     for file in $AUDIT_SCRIPTS;

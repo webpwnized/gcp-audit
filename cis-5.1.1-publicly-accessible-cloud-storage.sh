@@ -43,7 +43,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');	
 
-	gcloud config set project $PROJECT_ID;
+	gcloud config set project $PROJECT_ID 2>/dev/null;
 
 	declare BUCKETS=$(gsutil ls);
 	

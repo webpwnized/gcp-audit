@@ -40,7 +40,7 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
-	gcloud config set project $PROJECT_ID;
+	gcloud config set project $PROJECT_ID 2>/dev/null;
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
 	if [[ $INSTANCES != "[]" ]]; then

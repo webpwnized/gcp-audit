@@ -39,7 +39,7 @@ declare SEPARATOR="-------------------------------------------------------------
 
 for PROJECT_ID in $PROJECT_IDS; do
 
-	gcloud config set project $PROJECT_ID;
+	gcloud config set project $PROJECT_ID 2>/dev/null;
 	
 	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 	PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
