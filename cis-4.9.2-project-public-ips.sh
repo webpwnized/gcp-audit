@@ -69,9 +69,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 			if [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
 
-				if [[ $CSV == "True" ]]; then
-					echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"$STATUS\", \"$VERSION\"";
-				else
+				if [[ $CSV != "True" ]]; then
 					echo "Project Name: $PROJECT_NAME";
 					echo "Project Application: $PROJECT_APPLICATION";
 					echo "Project Owner: $PROJECT_OWNER";			
@@ -83,6 +81,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 					echo "Status: $STATUS";
 					if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
 					echo "";
+				else
+					echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"$STATUS\", \"$VERSION\"";
 				fi;
 			else
 				if [[ $CSV != "True" ]]; then
