@@ -36,14 +36,14 @@ do
 done;
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+    declare PROJECT_IDS=$(gcloud projects list --quiet --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 	sleep 0.5;
 
-	if [[ $(gcloud services list --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
+	if [[ $(gcloud services list --quiet --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
 		if [[ $CSV != "True" ]]; then
 			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
 		fi;
