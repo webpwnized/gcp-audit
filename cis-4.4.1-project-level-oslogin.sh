@@ -2,6 +2,7 @@
 
 PROJECT_IDS="";
 DEBUG="False";
+CSV="False";
 HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
 EOL
@@ -12,12 +13,13 @@ for arg in "$@"; do
   case "$arg" in
     "--help") 		set -- "$@" "-h" ;;
     "--debug") 		set -- "$@" "-d" ;;
+    "--csv") 		set -- "$@" "-c" ;;
     "--project")   	set -- "$@" "-p" ;;
     *)        		set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdp:" option
+while getopts "hdcp:" option
 do 
     case "${option}"
         in
@@ -25,6 +27,8 @@ do
         	PROJECT_IDS=${OPTARG};;
         d)
         	DEBUG="True";;
+        c)
+        	CSV="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -36,28 +40,37 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-
-	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
 	gcloud config set project $PROJECT_ID 2>/dev/null;
+	sleep 0.5;
+	
+	if [[ $(gcloud services list --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+		fi;
+		continue;
+	fi;
+
 	declare PROJECT_INFO=$(gcloud compute project-info describe --format="json");
 
 	if [[ $PROJECT_INFO != "" ]]; then
+
+		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 	
-		echo "---------------------------------------------------------------------------------";
-		echo "Project information for Project $PROJECT_ID";
-        	echo "Project Application: $PROJECT_APPLICATION";
-        	echo "Project Owner: $PROJECT_OWNER";
-		echo "---------------------------------------------------------------------------------";
+		if [[ $CSV != "True" ]]; then
+			echo "---------------------------------------------------------------------------------";
+			echo "OS Login for Project $PROJECT_ID";
+			echo "---------------------------------------------------------------------------------";
+		fi;
 
 		# Checking the project level confirguration
-		OSLOGIN_ENABLED=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true")' );
+		OSLOGIN_ENABLED_PROJECT=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true")' );
 
-		if [[ $OSLOGIN_ENABLED == "" ]]; then
-			echo "Project Name: $PROJECT_ID";
-			echo "VIOLATION: OS Login is NOT enabled at the Project level"
+		if [[ $OSLOGIN_ENABLED_PROJECT == "" ]]; then
+			echo "VIOLATION: OS Login is NOT enabled at the Project level";
+		else
+			echo "COMMENT: OS Login is enabled at the project level, but we need to check if OS Login is enabled at the instance level.";
 		fi;
 		echo "";
 	else
@@ -79,9 +92,15 @@ for PROJECT_ID in $PROJECT_IDS; do
 			NAME=$(echo $INSTANCE | jq -rc '.name');			
 			OSLOGIN_CONFIGURED=$(echo $INSTANCE | jq -rc '.metadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin")' );
 		
-			if [[ $OSLOGIN_CONFIGURED != "" ]]; then
+			if [[ $OSLOGIN_CONFIGURED == "" && $OSLOGIN_ENABLED_PROJECT == "" ]]; then
+				echo "PASSED: OS Login is enabled at the project level but not the instance level";
+			elif [[ $OSLOGIN_CONFIGURED != "" ]]; then
 				echo "Instance Name: $NAME";
-				echo "VIOLATION: OS Login is enabled at the instance level. OS Login must only be enabled at the project level";
+				if [[ $OSLOGIN_ENABLED_PROJECT == "" ]]; then
+					echo "VIOLATION: OS Login is NOT enabled at the project level but IS enabled at the instance level. OS Login must be enabled but ONLY at the project level";
+				else
+					echo "VIOLATION: OS Login is enabled at the project level AND at the instance level. OS Login must be enabled but ONLY at the project level";
+				fi;
 				echo "";
 			fi;
 		done;
@@ -90,7 +109,5 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "No instances found for Project $PROJECT_ID";
 		echo "";
 	fi;
-
-	sleep 0.5;
 done;
 

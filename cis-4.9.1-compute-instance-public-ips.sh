@@ -4,7 +4,7 @@ PROJECT_IDS="";
 DEBUG="False";
 CSV="False";
 HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]
 EOL
 );
 
@@ -41,6 +41,15 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 	gcloud config set project $PROJECT_ID 2>/dev/null;
+	sleep 0.5;
+
+	if [[ $(gcloud services list --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+		fi;
+		continue;
+	fi;
+	
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
 	if [[ $INSTANCES != "[]" ]]; then
@@ -89,7 +98,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 						fi;
 						echo "";
 					else
-						echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$INSTANCE_NAME\", \"$NETWORK\", \"$SUBNETWORK\", \"$INTERFACE_NAME\", \"$IP_ADDRESS\", \"$IS_GKE_NODE\"";
+						echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $INSTANCE_NAME, $NETWORK, $SUBNETWORK, $INTERFACE_NAME, $IP_ADDRESS, $IS_GKE_NODE";
 					fi;
 				else
 					if [[ $CSV != "True" ]]; then
@@ -105,6 +114,5 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "";
 		fi;
 	fi;
-	sleep 0.5;
 done;
 
