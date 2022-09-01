@@ -67,6 +67,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 		
 		echo $ADDRESSES | jq -rc '.[]' | while IFS='' read -r ADDRESS;do
 		
+			if [[ $DEBUG == "True" ]]; then
+				echo $ADDRESS | jq -rc '.';
+			fi;
+
 			NAME=$(echo $ADDRESS | jq -rc '.name');
 			IP_ADDRESS=$(echo $ADDRESS | jq -rc '.address');
 			ADDRESS_TYPE=$(echo $ADDRESS | jq -rc '.addressType');
@@ -75,8 +79,13 @@ for PROJECT_ID in $PROJECT_IDS; do
 			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description');
 			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion');
 			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose');
-
-			if [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
+			
+			if [[ $PURPOSE == "NAT_AUTO" ]]; then
+				if [[ $CSV != "True" ]]; then
+					echo "Non-issue: The IP address belong to a Cloud NAT Router";
+					echo "";
+				fi;
+			elif [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
 
 				if [[ $CSV != "True" ]]; then
 					echo "Project Name: $PROJECT_NAME";
