@@ -45,7 +45,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $(gcloud services list --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
 		if [[ $CSV != "True" ]]; then
-			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+			echo "COMMENT: Compute Engine API is not enabled for Project $PROJECT_ID.";
 		fi;
 		continue;
 	fi;
@@ -61,11 +61,18 @@ for PROJECT_ID in $PROJECT_IDS; do
 		if [[ $CSV != "True" ]]; then
 			echo "---------------------------------------------------------------------------------";
 			echo "OS Login for Project $PROJECT_ID";
+			echo "Project Name: $PROJECT_ID";
+			echo "Project Application: $PROJECT_APPLICATION";
+			echo "Project Owner: $PROJECT_OWNER";
 			echo "---------------------------------------------------------------------------------";
 		fi;
 
 		# Checking the project level confirguration
 		OSLOGIN_ENABLED_PROJECT=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true")' );
+
+		if [[ $DEBUG == "True" ]]; then
+			echo "OSLOGIN_ENABLED_PROJECT: $OSLOGIN_ENABLED_PROJECT"; 
+		fi;
 
 		if [[ $OSLOGIN_ENABLED_PROJECT == "" ]]; then
 			echo "VIOLATION: OS Login is NOT enabled at the Project level";
@@ -90,23 +97,29 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
 
 			NAME=$(echo $INSTANCE | jq -rc '.name');			
-			OSLOGIN_CONFIGURED=$(echo $INSTANCE | jq -rc '.metadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin")' );
+			OSLOGIN_ENABLED_INSTANCE=$(echo $INSTANCE | jq -rc '.metadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin")' );
+
+			if [[ $DEBUG == "True" ]]; then
+				echo "OSLOGIN_ENABLED_INSTANCE: $OSLOGIN_ENABLED_INSTANCE"; 
+			fi;
 		
-			if [[ $OSLOGIN_CONFIGURED == "" && $OSLOGIN_ENABLED_PROJECT == "" ]]; then
+			if [[ $OSLOGIN_ENABLED_PROJECT != "" && $OSLOGIN_ENABLED_INSTANCE == "" ]]; then
 				echo "PASSED: OS Login is enabled at the project level but not the instance level";
-			elif [[ $OSLOGIN_CONFIGURED != "" ]]; then
+			elif [[ $OSLOGIN_ENABLED_INSTANCE == "" ]]; then
+				echo "COMMENT: Ignoring instance $NAME. OS Login is not enable on this instance.";
+			elif [[ $OSLOGIN_ENABLED_INSTANCE != "" ]]; then
 				echo "Instance Name: $NAME";
-				if [[ $OSLOGIN_ENABLED_PROJECT == "" ]]; then
-					echo "VIOLATION: OS Login is NOT enabled at the project level but IS enabled at the instance level. OS Login must be enabled but ONLY at the project level";
-				else
+				if [[ $OSLOGIN_ENABLED_PROJECT != "" ]]; then
 					echo "VIOLATION: OS Login is enabled at the project level AND at the instance level. OS Login must be enabled but ONLY at the project level";
+				else
+					echo "VIOLATION: OS Login is NOT enabled at the project level but IS enabled at the instance level. OS Login must be enabled but ONLY at the project level";
 				fi;
 				echo "";
 			fi;
 		done;
 		echo "";
 	else
-		echo "No instances found for Project $PROJECT_ID";
+		echo "COMMENT: No instances found for Project $PROJECT_ID";
 		echo "";
 	fi;
 done;
