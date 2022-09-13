@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source helpers.inc
+
 PROJECT_IDS="";
 DEBUG="False";
 CSV="False";
@@ -42,13 +44,13 @@ fi;
 for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 	sleep 0.5;
-	
-	if [[ $(gcloud services list --enabled --filter="NAME=compute.googleapis.com" | grep -c "compute.googleapis.com") == 0 ]]; then
+
+	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
 			echo "COMMENT: Compute Engine API is not enabled for Project $PROJECT_ID.";
 		fi;
-		continue;
-	fi;
+		continue
+	fi
 
 	declare PROJECT_INFO=$(gcloud compute project-info describe --format="json");
 

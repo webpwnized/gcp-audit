@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source helpers.inc
+
 PROJECT_IDS="";
 DEBUG="False";
 HELP=$(cat << EOL
@@ -41,6 +43,12 @@ for PROJECT_ID in $PROJECT_IDS; do
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 	gcloud config set project $PROJECT_ID 2>/dev/null;
+
+	if ! api_enabled compute.googleapis.com; then
+		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+		continue
+	fi
+	
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
 	if [[ $INSTANCES != "[]" ]]; then

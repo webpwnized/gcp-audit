@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source helpers.inc
+
 PROJECT_IDS="";
 DEBUG="False";
 HELP=$(cat << EOL
@@ -36,6 +38,11 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
+    if ! api_enabled logging.googleapis.com; then
+        echo "Logging API is not enabled on Project $PROJECT_ID"
+        continue
+    fi
+
     PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
