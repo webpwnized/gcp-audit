@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ source helpers.inc
+
 PROJECT_IDS="";
 DEBUG="False";
 HELP=$(cat << EOL
@@ -41,11 +43,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
-	if [[ $(gcloud services list --enabled | grep -c -e cloudfunctions.googleapis.com) == 0 ]]; then
-		echo "Cloud Functions not enabled.";
+	if ! api_enabled cloudfunctions.googleapis.com; then
+		echo "Cloud Functions not enabled for Project $PROJECT_ID.";
 		continue;
-	fi;
-
+	fi
+	
 	declare RESULTS=$(gcloud functions list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
