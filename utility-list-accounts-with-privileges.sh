@@ -1,44 +1,74 @@
 #!/bin/bash
 
-LONG=role:
-SHORT=r:
-OPTS=$(getopt -a -n testscript --options $SHORT --longoptions $LONG -- "$@")
+declare ROLE="owner";
+declare PROJECT_IDS="";
+declare DEBUG="False";
+declare CSV="False";
+declare HELP=$(cat << EOL
+	$0 [-r,--role] [-p, --project PROJECT] [-d, --debug] [-h, --help]	
+EOL
+);
 
-eval set -- "$OPTS"
-while :
-do
-    case "$1" in --role | -r )
-        declare ROLE="$2"
-        shift 2
-     ;;
-     -- )
-        shift;
-        break
-        ;;
-        *)
-        exit 2
-    esac
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--help") 		set -- "$@" "-h" ;;
+    "--debug") 		set -- "$@" "-d" ;;
+    "--csv") 		set -- "$@" "-c" ;;
+    "--role") 		set -- "$@" "-r" ;;
+    "--project")   	set -- "$@" "-p" ;;
+    *)        		set -- "$@" "$arg"
+  esac
+done
+
+while getopts "hdcp:r:" option
+do 
+    case "${option}"
+        in
+        r)
+        	ROLE=${OPTARG};;
+        p)
+        	PROJECT_IDS=${OPTARG};;
+        d)
+        	DEBUG="True";;
+        c)
+        	CSV="True";;
+        h)
+        	echo $HELP; 
+        	exit 0;;
+    esac;
 done;
 
-if [[ $ROLE == "" ]]; then
-    ROLE="owner";
+if [[ $PROJECT_IDS == "" ]]; then
+    declare PROJECT_IDS=$(gcloud projects list --format="json");
+else
+    declare PROJECT_IDS=$(gcloud projects list --format="json" --filter="name:$PROJECT_IDS");
 fi;
-declare PROJECTS=$(gcloud projects list --format="json");
-if [[ $PROJECTS != "[]" ]]; then
-    echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
+
+if [[ $PROJECT_IDS != "[]" ]]; then
+    echo $PROJECT_IDS | jq -rc '.[]' | while IFS='' read PROJECT;do
         PROJECT_NAME=$(echo $PROJECT | jq -r '.name');
         PROJECT_OWNER=$(echo $PROJECT | jq -r '.labels.adid');
         PROJECT_APPLICATION=$(echo $PROJECT | jq -r '.labels.app');
         MEMBERS=$(gcloud projects get-iam-policy $PROJECT_NAME --format="json" | jq -r '.bindings[] |     select(.role=="roles/'$ROLE'") | .members[]');
+
         if [[ $MEMBERS != "" ]]; then
-            echo "Project Name: $PROJECT_NAME";
-            echo "Project Owner: $PROJECT_OWNER";
-            echo "Project Application: $PROJECT_APPLICATION";            
-            echo -e "Members ($ROLE role):\n$MEMBERS";
-            echo "";
+        	if [[ $CSV != "True" ]]; then
+			echo "Project Name: $PROJECT_NAME";
+			echo "Project Owner: $PROJECT_OWNER";
+			echo "Project Application: $PROJECT_APPLICATION";            
+			echo -e "Members ($ROLE role):\n$MEMBERS";
+            		echo "";
+        	else
+        		for MEMBER in $MEMBERS;do
+        			echo "$PROJECT_NAME, $PROJECT_OWNER, $PROJECT_APPLICATION, \"$MEMBER\"";
+        		done;
+        	fi;
         fi;
     done;
 else
-    echo "No projects found";
-    echo "";
+	if [[ $CSV != "True" ]]; then
+    		echo "No projects found";
+    		echo "";
+	fi;
 fi;
