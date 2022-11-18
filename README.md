@@ -6,13 +6,13 @@ The GCP Audit project automates many of the audits found in the Center for Inter
 
 ## Video Tutorial
 
-[How to Use GCP Audit (Cloud Shell)](https://www.youtube.com/watch?v=-3GKp9kEcwY)
+[**How to Use GCP Audit (Cloud Shell)**](https://www.youtube.com/watch?v=-3GKp9kEcwY)
 
 # Usage Instructions (Local Terminal)
 
 ## Video Tutorial
 
-[How to Use GCP Audit (Local Terminal)](https://www.youtube.com/watch?v=cnkr_gF7Erg)
+[**How to Use GCP Audit (Local Terminal)**](https://www.youtube.com/watch?v=cnkr_gF7Erg)
 
 ## Dependencies
 
