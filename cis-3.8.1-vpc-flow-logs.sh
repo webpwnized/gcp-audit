@@ -2,9 +2,10 @@
 
 source helpers.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-HELP=$(cat << EOL
+declare PROJECT_IDS="";
+declare CSV="False";
+declare DEBUG="False";
+declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
 EOL
 );
@@ -14,12 +15,13 @@ for arg in "$@"; do
   case "$arg" in
     "--help") 		set -- "$@" "-h" ;;
     "--debug") 		set -- "$@" "-d" ;;
+    "--csv") 		set -- "$@" "-c" ;;
     "--project")   	set -- "$@" "-p" ;;
     *)        		set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdp:" option
+while getopts "hdcp:r:" option
 do 
     case "${option}"
         in
@@ -27,6 +29,8 @@ do
         	PROJECT_IDS=${OPTARG};;
         d)
         	DEBUG="True";;
+        c)
+        	CSV="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -47,10 +51,12 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	declare SUBNETS=$(gcloud compute networks subnets list --format json);
 	
-	echo "---------------------------------------------------------------------------------";
-	echo "Subnets for Project $PROJECT_ID";
-	echo "---------------------------------------------------------------------------------";
-
+	if [[ $CSV != "True" ]]; then
+		echo "---------------------------------------------------------------------------------";
+		echo "Subnets for Project $PROJECT_ID";
+		echo "---------------------------------------------------------------------------------";
+	fi;
+	
 	if [[ $SUBNETS != "[]" ]]; then
 
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
@@ -64,11 +70,13 @@ for PROJECT_ID in $PROJECT_IDS; do
 			IP_RANGE=$(echo $SUBNET | jq -rc '.ipCidrRange');
 			FLOW_LOGS_CONFIGURED=$(echo $SUBNET | jq -rc '.logConfig');
 
-			echo "Project Name: $PROJECT_NAME";
-			echo "Project Application: $PROJECT_APPLICATION";
-			echo "Project Owner: $PROJECT_OWNER";			
-			echo "Subnet: $SUBNET_NAME";
-			echo "IP Range: $IP_RANGE";
+			if [[ $CSV != "True" ]]; then
+				echo "Project Name: $PROJECT_NAME";
+				echo "Project Application: $PROJECT_APPLICATION";
+				echo "Project Owner: $PROJECT_OWNER";			
+				echo "Subnet: $SUBNET_NAME";
+				echo "IP Range: $IP_RANGE";
+			fi;
 			
 			if [[ $FLOW_LOGS_CONFIGURED != "null" ]]; then
 			
@@ -79,26 +87,49 @@ for PROJECT_ID in $PROJECT_IDS; do
 				
 				# Returns 0 for FALSE and 1 for TRUE
 				FLOW_LOG_SAMPLE_RATE_TOO_LOW=$(echo "$FLOW_LOG_SAMPLE_RATE < 0.10" | bc);
-					
-				echo "Flow Log Enabled: $FLOW_LOGS_ENABLED";
-				echo "Flow Log Aggregation Interval: $FLOW_LOG_AGGREGATION_INTERVAL";
-				echo "Flow Log Sample Rate: $FLOW_LOG_SAMPLE_RATE";
-				echo "Flow Log Metadata Configuration: $FLOW_LOG_METADATA_CONFIGURATION";
-				if [[ $FLOW_LOGS_ENABLED == "false" ]]; then
-					echo "VIOLATION: Flow logging is configured but not enabled";
-				fi;
-				if [[ $FLOW_LOG_SAMPLE_RATE_TOO_LOW == 1 ]]; then
-					echo "VIOLATION: Flow log sample rate is too low";
-				fi;			
-			else
-				echo "VIOLATION: Flow logging is not configured";
+				
+				if [[ $CSV != "True" ]]; then
+
+					echo "Flow Log Enabled: $FLOW_LOGS_ENABLED";
+					echo "Flow Log Aggregation Interval: $FLOW_LOG_AGGREGATION_INTERVAL";
+					echo "Flow Log Sample Rate: $FLOW_LOG_SAMPLE_RATE";
+					echo "Flow Log Metadata Configuration: $FLOW_LOG_METADATA_CONFIGURATION";
+					if [[ $FLOW_LOGS_ENABLED == "false" ]]; then
+						echo "VIOLATION: Flow logging is configured but not enabled";
+					fi;
+					if [[ $FLOW_LOG_SAMPLE_RATE_TOO_LOW == 1 ]]; then
+						echo "VIOLATION: Flow log sample rate is too low";
+					fi;
+				else
+					if [[ $FLOW_LOGS_ENABLED == "false" ]]; then
+						FLOW_LOG_STATUS_MESSAGE="VIOLATION: Flow logging is configured but not enabled";
+					else
+						FLOW_LOG_STATUS_MESSAGE="Flow log enabled";
+					fi;
+					if [[ $FLOW_LOG_SAMPLE_RATE_TOO_LOW == 1 ]]; then
+						FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE="VIOLATION: Flow log sample rate is too low";
+					else
+						FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE="VIOLATION: Flow log sample rate is at least 10%";
+					fi;
+					echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $SUBNET_NAME, $IP_RANGE, $FLOW_LOGS_ENABLED, $FLOW_LOG_AGGREGATION_INTERVAL, $FLOW_LOG_SAMPLE_RATE, $FLOW_LOG_METADATA_CONFIGURATION, $FLOW_LOGS_ENABLED, \"$FLOW_LOG_STATUS_MESSAGE\", \"$FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
+				fi;		
+			else # $FLOW_LOGS_CONFIGURED is NULL
+				FLOW_LOGS_ENABLED="false";
+				FLOW_LOG_AGGREGATION_INTERVAL="0";
+				FLOW_LOG_SAMPLE_RATE="0";
+				FLOW_LOG_METADATA_CONFIGURATION="false";
+				FLOW_LOG_STATUS_MESSAGE="VIOLATION: Flow logging is configured but not enabled";
+				FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE="VIOLATION: Flow log sample rate is too low";
+				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $SUBNET_NAME, $IP_RANGE, $FLOW_LOGS_ENABLED, $FLOW_LOG_AGGREGATION_INTERVAL, $FLOW_LOG_SAMPLE_RATE, $FLOW_LOG_METADATA_CONFIGURATION, $FLOW_LOGS_ENABLED, \"$FLOW_LOG_STATUS_MESSAGE\", \"$FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 			fi;
 			echo "";
 		done;
 
 	else
-		echo "No subnets found for project $PROJECT_ID";
-		echo "";
+		if [[ $CSV != "True" ]]; then
+			echo "No subnets found for project $PROJECT_ID";
+			echo "";
+		fi;
 	fi;
 	sleep 0.5;
 done;
