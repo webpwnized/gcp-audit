@@ -43,6 +43,13 @@ else
     declare PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
 fi;
 
+if [[ $DEBUG == "True" ]]; then
+	echo "Project ID: $PROJECT_ID";
+	echo "";
+	echo "Projects";
+	echo $PROJECTS;
+fi;
+
 if [[ $PROJECTS != "[]" ]]; then
     echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
@@ -81,10 +88,10 @@ if [[ $PROJECTS != "[]" ]]; then
 		
 			echo $EXTERNAL_NETWORK_INTERFACES | jq -rc '.[]' | while IFS='' read -r INTERFACE;do
 
-				HAS_IP_ADDRESS=$(echo $INTERFACE | jq -rc '.accessConfigs // empty');
+				HAS_EXTERNAL_IP_ADDRESS=$(echo $INTERFACE | jq -rc '.accessConfigs // empty');
 
-				if [[ $HAS_IP_ADDRESS != "" ]]; then
-					
+				if [[ $HAS_EXTERNAL_IP_ADDRESS != "" ]]; then
+
 					INTERFACE_NAME=$(echo $INTERFACE | jq -rc '.name');
 					IP_ADDRESS=$(echo $INTERFACE | jq -rc '.accessConfigs[].natIP');
 					NETWORK=$(echo $INTERFACE | jq -rc '.network' | awk -F/ '{print $(NF)}');

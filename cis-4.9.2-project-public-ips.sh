@@ -98,6 +98,7 @@ if [[ $PROJECTS != "[]" ]]; then
 				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address cannot be routed externally";
 			fi;
 			
+			# Right now, we only print dirty addresses, but we could add a flag to print all
 			if [[ $CSV != "True" && $DIRTY == "True" ]]; then
 				echo "Project Name: $PROJECT_NAME";
 				echo "Project Application: $PROJECT_APPLICATION";
