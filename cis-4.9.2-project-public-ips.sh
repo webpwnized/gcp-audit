@@ -2,10 +2,10 @@
 
 source helpers.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-CSV="False";
-HELP=$(cat << EOL
+declare PROJECT_IDS="";
+declare DEBUG="False";
+declare CSV="False";
+declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
 );
@@ -26,7 +26,7 @@ do
     case "${option}"
         in
         p)
-        	PROJECT_IDS=${OPTARG};;
+        	PROJECT_ID=${OPTARG};;
         d)
         	DEBUG="True";;
         c)
@@ -37,13 +37,18 @@ do
     esac;
 done;
 
-if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --quiet --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+if [[ $PROJECT_ID == "" ]]; then
+    declare PROJECTS=$(gcloud projects list --format="json");
+else
+    declare PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
 fi;
 
-for PROJECT_ID in $PROJECT_IDS; do
+if [[ $PROJECTS != "[]" ]]; then
+    echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
+
+	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
+		
 	gcloud config set project $PROJECT_ID 2>/dev/null;
-	sleep 0.5;
 	
 	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
@@ -73,50 +78,49 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo $ADDRESS | jq -rc '.';
 			fi;
 
-			NAME=$(echo $ADDRESS | jq -rc '.name');
+			ADDRESS_NAME=$(echo $ADDRESS | jq -rc '.name');
 			IP_ADDRESS=$(echo $ADDRESS | jq -rc '.address');
 			ADDRESS_TYPE=$(echo $ADDRESS | jq -rc '.addressType');
 			KIND=$(echo $ADDRESS | jq -rc '.kind');
 			STATUS=$(echo $ADDRESS | jq -rc '.status');
-			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description');
-			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion');
-			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose');
+			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description //empty');
+			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion // empty');
+			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose // empty');
 			
 			if [[ $PURPOSE == "NAT_AUTO" ]]; then
-				if [[ $CSV != "True" ]]; then
-					echo "Non-issue: The IP address belong to a Cloud NAT Router";
-					echo "";
-				fi;
+				DIRTY="False";
+				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address belongs to a Cloud NAT Router";
 			elif [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
-
-				if [[ $CSV != "True" ]]; then
-					echo "Project Name: $PROJECT_NAME";
-					echo "Project Application: $PROJECT_APPLICATION";
-					echo "Project Owner: $PROJECT_OWNER";			
-
-					echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
-					echo "Name: $NAME";
-					if [[ $PURPOSE != "null" ]]; then echo "Purpose: $PURPOSE"; fi;
-					if [[ $DESCRIPTION != $NAME && $DESCRIPTION != "" ]]; then echo "Description: $DESCRIPTION"; fi;
-					echo "Status: $STATUS";
-					if [[ $VERSION != "null" ]]; then echo "Version: $VERSION"; fi;
-					echo "";
-				else
-					echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $IP_ADDRESS, $ADDRESS_TYPE, $KIND, $NAME, $PURPOSE, \"$DESCRIPTION\", $STATUS, $VERSION";
-				fi;
+				DIRTY="True";
+				EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Exterally routable IP address detected";
 			else
-				if [[ $CSV != "True" ]]; then
-					echo "Non-issue: The IP address cannot be routed externally";
-					echo "";
-				fi;
+				DIRTY="False";
+				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address cannot be routed externally";
+			fi;
+			
+			if [[ $CSV != "True" && $DIRTY == "True" ]]; then
+				echo "Project Name: $PROJECT_NAME";
+				echo "Project Application: $PROJECT_APPLICATION";
+				echo "Project Owner: $PROJECT_OWNER";
+				echo "IP Address: $IP_ADDRESS ($ADDRESS_TYPE $KIND)";
+				echo "Name: $ADDRESS_NAME";
+				echo "Status: $STATUS";
+				echo "Purpose: $PURPOSE";
+				echo "Description: $DESCRIPTION";
+				echo "Version: $VERSION";
+				echo "$EXTERNAL_IP_STATUS_MESSAGE";
+				echo "";
+			elif [[ $CSV == "True" && $DIRTY == "True" ]]; then
+				echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $IP_ADDRESS, $ADDRESS_TYPE, $KIND, $ADDRESS_NAME, $PURPOSE, \"$DESCRIPTION\", $STATUS, $VERSION, $DIRTY, \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 			fi;
 		done;
-	else
-		if [[ $CSV != "True" ]]; then
-			echo "No external addresses found for Project $PROJECT_ID";
-			echo "";
-		fi;
 	fi;
 	sleep 0.5;
-done;
+    done;
+else
+	if [[ $CSV != "True" ]]; then
+    		echo "No projects found";
+    		echo "";
+	fi;
+fi;
 

@@ -2,11 +2,11 @@
 
 source helpers.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-CSV="False";
-HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]
+declare PROJECT_IDS="";
+declare DEBUG="False";
+declare CSV="False";
+declare HELP=$(cat << EOL
+	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -26,7 +26,7 @@ do
     case "${option}"
         in
         p)
-        	PROJECT_IDS=${OPTARG};;
+        	PROJECT_ID=${OPTARG};;
         d)
         	DEBUG="True";;
         c)
@@ -37,14 +37,19 @@ do
     esac;
 done;
 
-if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --quiet --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+if [[ $PROJECT_ID == "" ]]; then
+    declare PROJECTS=$(gcloud projects list --format="json");
+else
+    declare PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
 fi;
 
-for PROJECT_ID in $PROJECT_IDS; do	
-	gcloud config set project $PROJECT_ID 2>/dev/null;
-	sleep 0.5;
+if [[ $PROJECTS != "[]" ]]; then
+    echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
+	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
+		
+	gcloud config set project $PROJECT_ID 2>/dev/null;
+	
 	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
 			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
@@ -56,17 +61,18 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $INSTANCES != "[]" ]]; then
 
+		# Get the project details
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-		
+				
 		if [[ $CSV != "True" ]]; then
 			echo "---------------------------------------------------------------------------------";
 			echo "Instances for Project $PROJECT_ID";
 			echo "---------------------------------------------------------------------------------";
 		fi;
-		
+	
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE; do
 
 			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');			
@@ -83,7 +89,12 @@ for PROJECT_ID in $PROJECT_IDS; do
 					IP_ADDRESS=$(echo $INTERFACE | jq -rc '.accessConfigs[].natIP');
 					NETWORK=$(echo $INTERFACE | jq -rc '.network' | awk -F/ '{print $(NF)}');
 					SUBNETWORK=$(echo $INTERFACE | jq -rc '.subnetwork' | awk -F/ '{print $(NF)}');
-
+					if [[ $IS_GKE_NODE == "false" ]]; then
+						EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Exterally routable IP address detected";
+					else
+						EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: GKE cluster is not a Private Kubernetes Cluster";
+					fi;
+						
 					if [[ $CSV != "True" ]]; then
 						echo "Project Name: $PROJECT_NAME";
 						echo "Project Application: $PROJECT_APPLICATION";
@@ -93,14 +104,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 						echo "Network: $NETWORK";
 						echo "Subnetwork: $SUBNETWORK";
 						echo "IP Address: $IP_ADDRESS";
-						if [[ $IS_GKE_NODE == "false" ]]; then
-							echo "VIOLATION: Exterally routable IP address detected";
-						else
-							echo "VIOLATION: GKE cluster is not a Private Kubernetes Cluster";
-						fi;
+						echo "Status: $EXTERNAL_IP_STATUS_MESSAGE";
 						echo "";
 					else
-						echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $INSTANCE_NAME, $NETWORK, $SUBNETWORK, $INTERFACE_NAME, $IP_ADDRESS, $IS_GKE_NODE";
+						echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $INSTANCE_NAME, $NETWORK, $SUBNETWORK, $INTERFACE_NAME, $IP_ADDRESS, $IS_GKE_NODE, \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 					fi;
 				else
 					if [[ $CSV != "True" ]]; then
@@ -116,5 +123,12 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "";
 		fi;
 	fi;
-done;
+	sleep 0.5;
+    done;
+else
+	if [[ $CSV != "True" ]]; then
+    		echo "No projects found";
+    		echo "";
+	fi;
+fi;
 
