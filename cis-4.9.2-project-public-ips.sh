@@ -86,10 +86,31 @@ if [[ $PROJECTS != "[]" ]]; then
 			DESCRIPTION=$(echo $ADDRESS | jq -rc '.description //empty');
 			VERSION=$(echo $ADDRESS | jq -rc '.ipVersion // empty');
 			PURPOSE=$(echo $ADDRESS | jq -rc '.purpose // empty');
+			USERS=$(echo $ADDRESS | jq -rc '.users[]?');
 			
-			if [[ $PURPOSE == "NAT_AUTO" ]]; then
+			# Set the Purpose field to a better value
+			if [[ $PURPOSE == "" ]]; then
+				if [[ $USERS == *"forwardingRules"* ]]; then
+					PURPOSE="Forwarding Rule";
+				elif [[ $USERS == *"routers"* ]]; then
+					PURPOSE="Cloud NAT Router";
+				elif [[ $STATUS == "RESERVED" ]]; then
+					PURPOSE="Reserved";
+				fi;
+			elif [[ $PURPOSE == "NAT_AUTO" ]]; then
+				PURPOSE="Cloud NAT Router";
+			fi;
+			
+			# Decide if the IP address is dirty
+			if [[ $PURPOSE == "Cloud NAT Router" ]]; then
 				DIRTY="False";
 				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address belongs to a Cloud NAT Router";
+			elif [[ $PURPOSE == "Forwarding Rule" ]]; then
+				DIRTY="False";
+				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address belongs to a Load Balancer Forwarding Rule";
+			elif [[ $PURPOSE == "Reserved" ]]; then
+				DIRTY="True";
+				EXTERNAL_IP_STATUS_MESSAGE="WARNING: The IP address is external but not in use at this time";
 			elif [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
 				DIRTY="True";
 				EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Exterally routable IP address detected";

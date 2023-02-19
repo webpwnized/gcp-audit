@@ -64,7 +64,7 @@ if [[ $PROJECTS != "[]" ]]; then
 		continue;
 	fi;
 	
-	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
+	declare INSTANCES=$(gcloud compute instances list --quiet --format="json" 2>/dev/null);
 
 	if [[ $INSTANCES != "[]" ]]; then
 
@@ -124,18 +124,18 @@ if [[ $PROJECTS != "[]" ]]; then
 				fi;
 			done;
 		done;
-	else
+	else # if no instances
 		if [[ $CSV != "True" ]]; then
 			echo "No compute instances found for Project $PROJECT_ID";
 			echo "";
 		fi;
-	fi;
+	fi; # if instances
 	sleep 0.5;
     done;
-else
+else # if no projects
 	if [[ $CSV != "True" ]]; then
     		echo "No projects found";
     		echo "";
 	fi;
-fi;
+fi; # if projects
 
