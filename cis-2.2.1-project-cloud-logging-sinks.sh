@@ -2,6 +2,7 @@
 
 source helpers.inc
 
+declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
@@ -55,9 +56,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	fi;
 	
 	if [[ $CSV != "True" ]]; then
-		echo "---------------------------------------------------------------------------------";
+		echo $SEPARATOR;
 		echo "Log Sinks for Project $PROJECT_ID";
-		echo "---------------------------------------------------------------------------------";
+		echo $SEPARATOR;
 	fi;
 	
 	if [[ $SINKS != "[]" ]]; then
@@ -82,9 +83,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 			# Print the results gathered above
 			if [[ $CSV != "True" ]]; then
+				echo "Project ID: $PROJECT_ID";
 				echo "Project Name: $PROJECT_NAME";
 				echo "Project Application: $PROJECT_APPLICATION";
-				echo "Project Owner: $PROJECT_OWNER";			
+				echo "Project Owner: $PROJECT_OWNER";
 				echo "Log Sink Name: $SINK_NAME";
 				echo "Log Sink Destination: $SINK_DESTINATION";
 				echo "Log Sink Filter: $SINK_FILTER";

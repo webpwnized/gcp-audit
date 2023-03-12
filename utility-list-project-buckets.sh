@@ -76,50 +76,17 @@ for PROJECT_ID in $PROJECT_IDS; do
 		
 		for BUCKET_NAME in $BUCKET_NAMES; do
 
-			declare PERMISSIONS=$(gsutil iam get $BUCKET_NAME);
-
-			if [[ $DEBUG == "True" ]]; then
-				echo "Permissions (JSON): $PERMISSIONS";
-			fi;
-
 			if [[ $CSV != "True" ]]; then
-				echo $SEPARATOR;
-				echo "IAM Permissions for Bucket $BUCKET_NAME";
-				echo $SEPARATOR;
+				echo "Project ID: $PROJECT_ID";
+				echo "Project Name: $PROJECT_NAME";
+				echo "Project Application: $PROJECT_APPLICATION";
+				echo "Project Owner: $PROJECT_OWNER";
+				echo "Bucket Name: $BUCKET_NAME";
+				echo "";
+			else
+				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $BUCKET_NAME";
 			fi;
 
-			echo $PERMISSIONS | jq -r -c '.bindings[]' | while IFS='' read -r PERMISSION;do
-
-				MEMBERS=$(echo $PERMISSION | jq -rc '.members[]');
-				ROLE=$(echo $PERMISSION | jq '.role');
-
-				if [[ $ROLE =~ "allUsers" ]]; then
-					ALL_USERS_MESSAGE="VIOLATION: Bucket publicly exposed to allUsers";
-				else
-					ALL_USERS_MESSAGE="OK: The allUsers group does not have permission to the bucket"; 
-				fi;
-
-				if [[ $ROLE =~ "allAuthenticatedUsers" ]]; then
-					ALL_AUTHENTICATED_USERS_MESSAGE="VIOLATION: Bucket publicly exposed to allAuthenticatedUsers";
-				else
-					ALL_AUTHENTICATED_USERS_MESSAGE="OK: The allAuthenticatedUsers group does not have permission to the bucket";
-				fi;
-
-				if [[ $CSV != "True" ]]; then
-					echo "Project ID: $PROJECT_ID";
-					echo "Project Name: $PROJECT_NAME";
-					echo "Project Application: $PROJECT_APPLICATION";
-					echo "Project Owner: $PROJECT_OWNER";
-					echo "Bucket Name: $BUCKET_NAME";
-					echo "Members: $MEMBERS";
-					echo "Role: $ROLE";
-					echo "$ALL_USERS_MESSAGE";
-					echo "$ALL_AUTHENTICATED_USERS_MESSAGE";
-					echo "";
-				else
-					echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $BUCKET_NAME, \"$MEMBERS\", \"$ROLE\", \"$ALL_USERS_MESSAGE\", \"$ALL_AUTHENTICATED_USERS_MESSAGE\"";
-				fi;
-			done;
 		done;
 		echo "";
 	else
