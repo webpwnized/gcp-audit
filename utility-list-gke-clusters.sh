@@ -51,59 +51,61 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
-	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+	if ! api_enabled container.googleapis.com; then
+		echo "GKE Cluster API is not enabled on Project $PROJECT_ID"
 		continue
 	fi
 
-	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
+	declare CLUSTERS=$(gcloud container clusters list --quiet --format="json");
 
 	if [[ $DEBUG == "True" ]]; then
-		echo "Instances (JSON): $INSTANCES";
+		echo "GKE Clusters (JSON): $CLUSTERS";
 	fi;
 
 	if [[ $CSV != "True" ]]; then
 		echo $SEPARATOR;
-		echo "Instances for Project $PROJECT_ID";
+		echo "GKE Clusters for Project $PROJECT_ID";
 		echo $SEPARATOR;
 	fi;
 	
-	if [[ $INSTANCES != "[]" ]]; then
+	if [[ $CLUSTERS != "[]" ]]; then
 
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
-		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
+		echo $CLUSTERS | jq -rc '.[]' | while IFS='' read -r CLUSTER;do
 
-			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');
-			ENABLED_SERIAL_PORTS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="serial-port-enable")' | jq -rc '.value' | tr '[:upper:]' '[:lower:]' );
-			ENABLED_SERIAL_PORTS_STATUS_MESSAGE="Disabled";
-			
-			if [[ $ENABLED_SERIAL_PORTS != "0" && $ENABLED_SERIAL_PORTS != "" ]]; then
-				ENABLED_SERIAL_PORTS_STATUS_MESSAGE="VIOLATION: Serial port enabled";
-			fi;
-			
+			CLUSTER_NAME=$(echo $CLUSTER | jq -rc '.name');
+			CLUSTER_CONTROLLER_VERSION=$(echo $CLUSTER | jq -rc '.currentMasterVersion');
+			CLUSTER_NODE_VERSION=$(echo $CLUSTER | jq -rc '.currentNodeVersion');
+			NODE_COUNT=$(echo $CLUSTER | jq -rc '.currentNodeCount');
+			BINARY_AUTHORIZATION_MODE=$(echo $CLUSTER | jq -rc '.binaryAuthorization.evaluationMode // empty');
+			DATABASE_ENCRYPTION_MODE=$(echo $CLUSTER | jq -rc '.databaseEncryption.state // empty');
+			PRIVATE_CLUSTER_MODE=$(echo $CLUSTER | jq -rc '.privateClusterConfig.enablePrivateNodes // empty');
+
 			# Print the results gathered above
 			if [[ $CSV != "True" ]]; then
 				echo "Project ID: $PROJECT_ID";
 				echo "Project Name: $PROJECT_NAME";
 				echo "Project Application: $PROJECT_APPLICATION";
 				echo "Project Owner: $PROJECT_OWNER";
-				echo "Instance Name: $INSTANCE_NAME";
-				echo "Serial Port Setting: $ENABLED_SERIAL_PORTS";
-				echo "Serial Port Status: $ENABLED_SERIAL_PORTS_STATUS_MESSAGE";
+				echo "GKE Cluster Name: $CLUSTER_NAME";
+				echo "GKE Cluster Node Version: $CLUSTER_NODE_VERSION";
+				echo "GKE Cluster Binary Authorization Status: $BINARY_AUTHORIZATION_MODE";
+				echo "GKE Cluster Database Encryption Mode: $DATABASE_ENCRYPTION_MODE";
+				echo "GKE Cluster Private Cluster Mode: $PRIVATE_CLUSTER_MODE";				
 				echo "";
 			else
-				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $INSTANCE_NAME, $ENABLED_SERIAL_PORTS, \"$ENABLED_SERIAL_PORTS_STATUS_MESSAGE\"";
+				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $CLUSTER_NAME, \"$CLUSTER_NODE_VERSION\", $BINARY_AUTHORIZATION_MODE, $DATABASE_ENCRYPTION_MODE, $PRIVATE_CLUSTER_MODE";
 			fi;		
 
 		done;
 		echo "";
 	else
 		if [[ $CSV != "True" ]]; then
-			echo "No instances found for project $PROJECT_ID";
+			echo "No GKE Clusters found for project $PROJECT_ID";
 			echo "";
 		fi;
 	fi;
