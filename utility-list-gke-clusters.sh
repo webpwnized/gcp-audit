@@ -52,9 +52,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
 	if ! api_enabled container.googleapis.com; then
-		echo "GKE Cluster API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+		if [[ $CSV != "True" ]]; then
+			echo "GKE Cluster API is not enabled on Project $PROJECT_ID";
+			continue;
+		fi;
+	fi;
 
 	declare CLUSTERS=$(gcloud container clusters list --quiet --format="json");
 
@@ -66,6 +68,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $SEPARATOR;
 		echo "GKE Clusters for Project $PROJECT_ID";
 		echo $SEPARATOR;
+		echo "";
 	fi;
 	
 	if [[ $CLUSTERS != "[]" ]]; then
@@ -102,7 +105,6 @@ for PROJECT_ID in $PROJECT_IDS; do
 			fi;		
 
 		done;
-		echo "";
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No GKE Clusters found for project $PROJECT_ID";
