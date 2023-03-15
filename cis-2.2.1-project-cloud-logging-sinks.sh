@@ -92,7 +92,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Log Sink Filter: $SINK_FILTER";
 				echo "";
 			else
-				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $SINK_NAME, $SINK_DESTINATION, \"$SINK_FILTER\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$SINK_NAME\", \"$SINK_DESTINATION\", \"$SINK_FILTER\"";
 			fi;		
 
 		done;
