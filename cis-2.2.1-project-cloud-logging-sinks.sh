@@ -38,11 +38,6 @@ do
     esac;
 done;
 
-if ! api_enabled logging.googleapis.com; then
-	echo "WARNING: Logging API is not enabled";
-	exit 1000;
-fi;
-
 declare DEFAULT_DEFAULT_LOG_SINK_FILTER="NOT LOG_ID(\"cloudaudit.googleapis.com/activity\") AND NOT LOG_ID(\"externalaudit.googleapis.com/activity\") AND NOT LOG_ID(\"cloudaudit.googleapis.com/system_event\") AND NOT LOG_ID(\"externalaudit.googleapis.com/system_event\") AND NOT LOG_ID(\"cloudaudit.googleapis.com/access_transparency\") AND NOT LOG_ID(\"externalaudit.googleapis.com/access_transparency\")";
 
 declare DEFAULT_REQUIRED_LOG_SINK_FILTER="LOG_ID(\"cloudaudit.googleapis.com/activity\") OR LOG_ID(\"externalaudit.googleapis.com/activity\") OR LOG_ID(\"cloudaudit.googleapis.com/system_event\") OR LOG_ID(\"externalaudit.googleapis.com/system_event\") OR LOG_ID(\"cloudaudit.googleapis.com/access_transparency\") OR LOG_ID(\"externalaudit.googleapis.com/access_transparency\")";
@@ -58,6 +53,11 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
+
+	if ! api_enabled logging.googleapis.com; then
+		echo "WARNING: Logging API is not enabled";
+		exit 1000;
+	fi;
 
 	declare SINKS=$(gcloud logging sinks list --format json --project="$PROJECT_ID");
 	
