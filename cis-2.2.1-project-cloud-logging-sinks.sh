@@ -54,6 +54,8 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
 
+	gcloud config set project $PROJECT_ID 2>/dev/null;
+
 	if ! api_enabled logging.googleapis.com; then
 		echo "WARNING: Logging API is not enabled";
 		exit 1000;
