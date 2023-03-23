@@ -52,6 +52,11 @@ if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi;
 
+if [[ $DEBUG == "True" ]]; then
+	echo "Projects: $PROJECT_IDS";
+	echo "";
+fi;
+
 for PROJECT_ID in $PROJECT_IDS; do
 
 	gcloud config set project $PROJECT_ID 2>/dev/null;
@@ -65,6 +70,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $DEBUG == "True" ]]; then
 		echo "Sinks (JSON): $SINKS";
+		echo "";
 	fi;
 	
 	if [[ $CSV != "True" ]]; then
