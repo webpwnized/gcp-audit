@@ -133,7 +133,8 @@ if [[ $PROJECTS != "[]" ]]; then
 				echo "$EXTERNAL_IP_STATUS_MESSAGE";
 				echo "";
 			elif [[ $CSV == "True" && $DIRTY == "True" ]]; then
-				echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $IP_ADDRESS, $ADDRESS_TYPE, $KIND, $ADDRESS_NAME, $PURPOSE, \"$DESCRIPTION\", $STATUS, $VERSION, $DIRTY, \"$EXTERNAL_IP_STATUS_MESSAGE\"";
+				echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$ADDRESS_NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"
+				$STATUS\", \"$VERSION\", \"$DIRTY\", \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 			fi;
 		done;
 	fi;

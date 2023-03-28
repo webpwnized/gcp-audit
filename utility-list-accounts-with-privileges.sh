@@ -74,7 +74,7 @@ if [[ $PROJECT_IDS != "[]" ]]; then
         		for MEMBER in $MEMBERS;do
         			ACCOUNT_TYPE=$(echo $MEMBER | cut -d ":" -f1);
         			ACCOUNT=$(echo $MEMBER | cut -d ":" -f2);
-        			echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $ACCOUNT, $ACCOUNT_TYPE, $ENVIRONMENT";
+        			echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$ACCOUNT\", \"$ACCOUNT_TYPE\", \"$ENVIRONMENT\"";
         		done;
         	fi;
         fi;
