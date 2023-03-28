@@ -114,7 +114,7 @@ if [[ $PROJECTS != "[]" ]]; then
 						echo "Status: $EXTERNAL_IP_STATUS_MESSAGE";
 						echo "";
 					else
-						echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $INSTANCE_NAME, $NETWORK, $SUBNETWORK, $INTERFACE_NAME, $IP_ADDRESS, $IS_GKE_NODE, \"$EXTERNAL_IP_STATUS_MESSAGE\"";
+						echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$INSTANCE_NAME\", \"$NETWORK\", \"$SUBNETWORK\", \"$INTERFACE_NAME\", \"$IP_ADDRESS\", \"$IS_GKE_NODE\", \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 					fi;
 				else
 					if [[ $CSV != "True" ]]; then

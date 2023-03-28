@@ -84,7 +84,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Bucket Name: $BUCKET_NAME";
 				echo "";
 			else
-				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $BUCKET_NAME";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$BUCKET_NAME\"";
 			fi;
 
 		done;
