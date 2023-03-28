@@ -79,7 +79,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 			OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE="VIOLATION: OS Login is NOT enabled at the Project level";
 			VIOLATION_FLAG="True";
 		else
-			OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE="COMMENT: OS Login is enabled at the project level, but we need to check if OS Login is enabled at the instance level.";
+			OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE="COMMENT: OS Login is enabled at the project level, but we need to check if OS Login is enabled at the instance level";
 			VIOLATION_FLAG="False";
 		fi;
 	else

@@ -62,8 +62,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
 	if ! api_enabled logging.googleapis.com; then
-		echo "WARNING: Logging API is not enabled";
-		exit 1000;
+		if [[ $CSV != "True" ]]; then
+			echo "Logging API is not enabled on Project $PROJECT_ID";
+		fi;
+		continue;
 	fi;
 
 	declare SINKS=$(gcloud logging sinks list --format json --project="$PROJECT_ID");
