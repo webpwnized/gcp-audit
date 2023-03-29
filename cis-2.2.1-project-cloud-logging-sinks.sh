@@ -63,7 +63,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if ! api_enabled logging.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
-			echo "Logging API is not enabled on Project $PROJECT_ID";
+			echo "WARNING: Logging API is not enabled";
 		fi;
 		continue;
 	fi;
