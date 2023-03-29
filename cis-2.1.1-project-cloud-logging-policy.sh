@@ -41,7 +41,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 	echo "IAM Policy for Project $PROJECT_ID"
-    echo "Project Application: $PROJECT_APPLICATION";
+    	echo "Project Application: $PROJECT_APPLICATION";
 	echo "Project Owner: $PROJECT_OWNER"; 
 	echo ""
 	gcloud projects get-iam-policy $PROJECT_ID;

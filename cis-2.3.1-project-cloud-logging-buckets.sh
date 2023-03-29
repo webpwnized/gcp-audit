@@ -38,11 +38,6 @@ do
     esac;
 done;
 
-if ! api_enabled logging.googleapis.com; then
-	echo "WARNING: Logging API is not enabled";
-	exit 1000;
-fi;
-
 if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
 fi;
@@ -52,6 +47,13 @@ if [[ $DEBUG == "True" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
+
+	if ! api_enabled logging.googleapis.com; then
+		if [[ $CSV != "True" ]]; then
+			echo "WARNING: Logging API is not enabled";
+		fi;
+		continue;
+	fi;
 
 	declare BUCKETS=$(gcloud logging buckets list --format json --project="$PROJECT_ID");
 	
