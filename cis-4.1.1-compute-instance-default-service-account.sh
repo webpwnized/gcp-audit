@@ -60,6 +60,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
  	declare INSTANCES=$( gcloud compute instances list --quiet --format="json");
 
+	if [[ $DEBUG == "True" ]]; then
+		echo "Instances (JSON): $INSTANCES";
+		echo "";
+	fi;
+
 	if [[ $INSTANCES != "[]" ]]; then
 
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
