@@ -1,6 +1,6 @@
 #!/bin/bash
 
- source helpers.inc
+ source functions.inc
 
 PROJECT_IDS="";
 DEBUG="False";

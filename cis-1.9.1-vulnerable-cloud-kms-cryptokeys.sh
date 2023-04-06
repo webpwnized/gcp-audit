@@ -1,6 +1,6 @@
 #!/bin/bash
 
- source helpers.inc
+ source functions.inc
 
 if ! api_enabled cloudkms.googleapis.com; then
 	echo "Cloud KMS not enabled.";
