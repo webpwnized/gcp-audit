@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source helpers.inc
+source functions.inc
 
 declare ORGANIZATION_IDS=$(gcloud organizations list --format="flattened(ID)" | grep id | cut -d " " -f 2 | cut -d "/" -f 2)
 

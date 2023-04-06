@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source helpers.inc
+source functions.inc
 
 declare ORGANIZATION_IDS="";
 declare FOLDER_ID="";
