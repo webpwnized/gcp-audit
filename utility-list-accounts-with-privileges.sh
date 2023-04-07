@@ -4,6 +4,7 @@ declare ROLE="owner";
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-r,--role] [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
@@ -12,16 +13,17 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--role") 		set -- "$@" "-r" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--role") 			set -- "$@" "-r" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:r:" option
+while getopts "hdcip:r:" option
 do 
     case "${option}"
         in
@@ -46,6 +48,11 @@ else
 fi;
 
 if [[ $PROJECT_IDS != "[]" ]]; then
+
+    if [[ $ICH == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"ACCOUNT\", \"ACCOUNT_TYPE\", \"ENVIRONMENT\"";
+    fi;
+
     echo $PROJECT_IDS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
 	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
@@ -74,7 +81,7 @@ if [[ $PROJECT_IDS != "[]" ]]; then
         		for MEMBER in $MEMBERS;do
         			ACCOUNT_TYPE=$(echo $MEMBER | cut -d ":" -f1);
         			ACCOUNT=$(echo $MEMBER | cut -d ":" -f2);
-        			echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $ACCOUNT, $ACCOUNT_TYPE, $ENVIRONMENT";
+        			echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$ACCOUNT\", \"$ACCOUNT_TYPE\", \"$ENVIRONMENT\"";
         		done;
         	fi;
         fi;

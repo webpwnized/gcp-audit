@@ -5,6 +5,7 @@ source functions.inc
 declare ORGANIZATION_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-o, --organization ORGANIZATION] [--csv] [-d, --debug] [-h, --help]	
 EOL
@@ -13,15 +14,16 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
     "--orgnanization")   	set -- "$@" "-o" ;;
-    *)        		set -- "$@" "$arg"
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdco:" option
+while getopts "hdcio:" option
 do 
     case "${option}"
         in
@@ -31,6 +33,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	ich) 	
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -58,6 +62,10 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Organizations (JSON): $ORGANIZATIONS";
+fi;
+
+if [[ $ICH == "True" ]]; then
+	echo "\"ORGANIZATION_DISPLAY_NAME\", \"SINK_NAME\", \"SINK_DESTINATION\", \"SINK_FILTER_IS_DEFAULT_DEFAULT\", \"SINK_FILTER_IS_REQUIRED_DEFAULT\", \"SINK_FILTER_MESSAGE\", \"SINK_FILTER\"";
 fi;
 
 echo $ORGANIZATIONS | jq -rc '.[]' | while IFS='' read -r ORGANIZATION; do

@@ -6,6 +6,7 @@ declare SEPARATOR="-------------------------------------------------------------
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
@@ -14,15 +15,16 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:" option
+while getopts "hdcip:" option
 do 
     case "${option}"
         in
@@ -32,6 +34,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	ich)
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -44,6 +48,10 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
+fi;
+
+if [[ $ICH == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"BUCKET_NAME_SHORT\", \"BUCKET_NAME_LOCATION\", \"BUCKET_LIFECYCLE_STATE\", \"BUCKET_RETENTION_DAYS\", \"BUCKET_DESCRIPTION\", \"BUCKET_RETENTION_WARNING\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
@@ -112,7 +120,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Log Bucket Retention Information: $BUCKET_RETENTION_WARNING";
 				echo "";
 			else
-				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $BUCKET_NAME_SHORT, $BUCKET_NAME_LOCATION, $BUCKET_LIFECYCLE_STATE, $BUCKET_RETENTION_DAYS, \"$BUCKET_DESCRIPTION\", \"$BUCKET_RETENTION_WARNING\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$BUCKET_NAME_SHORT\", \"$BUCKET_NAME_LOCATION\", \"$BUCKET_LIFECYCLE_STATE\", \"$BUCKET_RETENTION_DAYS\", \"$BUCKET_DESCRIPTION\", \"$BUCKET_RETENTION_WARNING\"";
 			fi;		
 
 		done;
