@@ -5,6 +5,7 @@ source functions.inc
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
@@ -13,15 +14,16 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:r:" option
+while getopts "hdcip:r:" option
 do 
     case "${option}"
         in
@@ -31,6 +33,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	ich)	
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -39,6 +43,10 @@ done;
 
 if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+fi;
+
+if [[ $ICH == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"SUBNET_NAME\", \"IP_RANGE\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_AGGREGATION_INTERVAL\", \"FLOW_LOG_SAMPLE_RATE\", \"FLOW_LOG_METADATA_CONFIGURATION\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_STATUS_MESSAGE\", \"FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
@@ -116,7 +124,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo $FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE;
 				echo "";
 			else
-				echo "$PROJECT_ID, \"$PROJECT_NAME\", $PROJECT_OWNER, $PROJECT_APPLICATION, $SUBNET_NAME, $IP_RANGE, $FLOW_LOGS_ENABLED, $FLOW_LOG_AGGREGATION_INTERVAL, $FLOW_LOG_SAMPLE_RATE, $FLOW_LOG_METADATA_CONFIGURATION, $FLOW_LOGS_ENABLED, \"$FLOW_LOG_STATUS_MESSAGE\", \"$FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$SUBNET_NAME\", \"$IP_RANGE\", \"$FLOW_LOGS_ENABLED\", \"$FLOW_LOG_AGGREGATION_INTERVAL\", \"$FLOW_LOG_SAMPLE_RATE\", \"$FLOW_LOG_METADATA_CONFIGURATION\", \"$FLOW_LOGS_ENABLED\", \"$FLOW_LOG_STATUS_MESSAGE\", \"$FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 			fi;		
 
 		done;

@@ -5,6 +5,7 @@ source functions.inc
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
 EOL
@@ -13,15 +14,16 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:" option
+while getopts "hdcip:" option
 do 
     case "${option}"
         in
@@ -31,6 +33,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	ich)
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -44,6 +48,11 @@ else
 fi;
 
 if [[ $PROJECTS != "[]" ]]; then
+
+    if [[ $ICH == "True" ]]; then
+	    echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"IP_ADDRESS\", \"ADDRESS_TYPE\", \"KIND\", \"ADDRESS_NAME\", \"PURPOSE\", \"DESCRIPTION\", \"STATUS\", \"VERSION\", \"DIRTY\", \"EXTERNAL_IP_STATUS_MESSAGE\"";
+    fi;
+
     echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
 	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
@@ -133,7 +142,7 @@ if [[ $PROJECTS != "[]" ]]; then
 				echo "$EXTERNAL_IP_STATUS_MESSAGE";
 				echo "";
 			elif [[ $CSV == "True" && $DIRTY == "True" ]]; then
-				echo "$PROJECT_NAME, $PROJECT_APPLICATION, $PROJECT_OWNER, $IP_ADDRESS, $ADDRESS_TYPE, $KIND, $ADDRESS_NAME, $PURPOSE, \"$DESCRIPTION\", $STATUS, $VERSION, $DIRTY, \"$EXTERNAL_IP_STATUS_MESSAGE\"";
+				echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$ADDRESS_NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"$STATUS\", \"$VERSION\", \"$DIRTY\", \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 			fi;
 		done;
 	fi;

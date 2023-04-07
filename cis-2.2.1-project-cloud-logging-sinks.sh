@@ -6,23 +6,25 @@ declare SEPARATOR="-------------------------------------------------------------
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [--csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
 EOL
 );
 
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-i" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:" option
+while getopts "hdcip:" option
 do 
     case "${option}"
         in
@@ -32,6 +34,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	i) 	
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -55,6 +59,10 @@ fi;
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
 	echo "";
+fi;
+
+if [[ $ICH == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"SINK_NAME\", \"SINK_DESTINATION\", \"SINK_FILTER_IS_DEFAULT_DEFAULT\", \"SINK_FILTER_IS_REQUIRED_DEFAULT\", \"SINK_FILTER_MESSAGE\", \"SINK_FILTER\"";	
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do

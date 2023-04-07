@@ -6,6 +6,7 @@ declare SEPARATOR="-------------------------------------------------------------
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
+declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
 EOL
@@ -14,15 +15,16 @@ EOL
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--csv") 		set -- "$@" "-c" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--project")	   	set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdcp:" option
+while getopts "hdcip:" option
 do 
     case "${option}"
         in
@@ -32,6 +34,8 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
+	ich)
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -45,6 +49,10 @@ fi;
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
 	echo "";
+fi;
+
+if [[ $ICH == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"INSTANCE\", \"INSTANCE_NAME\", \"VIOLATION_FLAG\", \"OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
@@ -100,7 +108,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "Status: $OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE";
 		echo "";
 	else
-		echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"Project\", \"$PROJECT_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE\"";
+		echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$PROJECT\", \"$PROJECT_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE\"";
 	fi;	
 	
 	# Checking the instance level configuration	
@@ -151,7 +159,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Status: $OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE";
 				echo "";
 			else
-				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"Instance\", \"$INSTANCE_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE\", \"$INSTANCE_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE\"";
 			fi;
 			
 		done;
