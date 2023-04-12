@@ -7,7 +7,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [--csv] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -17,7 +17,7 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-ich" ;;
+    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -33,7 +33,7 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	ich)	
+	i)	
 		ICH="True";;
         h)
         	echo $HELP; 
