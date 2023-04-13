@@ -87,7 +87,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');
 			ENABLED_SERIAL_PORTS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="serial-port-enable")' | jq -rc '.value' | tr '[:upper:]' '[:lower:]' );
-			ENABLED_SERIAL_PORTS_STATUS_MESSAGE="Disabled";
+			ENABLED_SERIAL_PORTS_STATUS_MESSAGE="Serial port disabled";
 			
 			if [[ $ENABLED_SERIAL_PORTS != "0" && $ENABLED_SERIAL_PORTS != "" ]]; then
 				ENABLED_SERIAL_PORTS_STATUS_MESSAGE="VIOLATION: Serial port enabled";
