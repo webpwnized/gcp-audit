@@ -8,7 +8,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [--csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
 EOL
 );
 
