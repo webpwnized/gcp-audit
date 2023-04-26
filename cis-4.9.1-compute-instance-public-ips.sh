@@ -83,12 +83,6 @@ if [[ $PROJECTS != "[]" ]]; then
 		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 				
-		if [[ $CSV != "True" ]]; then
-			echo "---------------------------------------------------------------------------------";
-			echo "Instances for Project $PROJECT_ID";
-			echo "---------------------------------------------------------------------------------";
-		fi;
-	
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE; do
 
 			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');			

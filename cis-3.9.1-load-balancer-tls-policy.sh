@@ -2,197 +2,320 @@
 
 source functions.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
+function initializeVariables() {
+	# Variables are global scope if they are not preceeded by the local keyword
+	SSL_POLICY_DETAILS="";
+	SSL_POLICY_PROFILE="";
+	SSL_POLICY_MIN_VERSION="";
+	SSL_POLICY_CIPHER_SUITES="";
+	IS_IMPLEMENTING_ENCRYPTION="False";
+	IS_IMPLEMENTING_ENCRYPTION_MESSAGE="The proxy does not implement transport layer encryption";
+	IS_USING_DEFAULT_POLICY="True";
+	IS_USING_DEFAULT_POLICY_MESSAGE="The proxy implements the default TLS policy";
+	SSL_POLICY_PROFILE="None";
+	IS_USING_SECURE_SSL_POLICY_PROFILE="False";
+	IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE="The SSL Policy Profile is insecure";
+	IS_SSL_POLICY_MIN_VERSION_SECURE="False";
+	SSL_POLICY_MIN_VERSION="None";
+	SSL_POLICY_MIN_VERSION_MESSAGE="The TLS Minimum Version is insecure";
+	SSL_POLICY_CIPHER_SUITES="None";
+};
+
+function debugProjects() {
+	# Variables are global scope if they are not preceeded by the local keyword
+	echo "Project ID: $PROJECT_ID";
+	echo "";
+	echo "Projects";
+	echo $PROJECTS;
+	echo "";
+};
+
+function debugProxy() {
+	echo "$PROXY_TYPE (JSON): $PROXY";
+	echo "";
+};
+
+function debugSSLPolicy() {
+	echo "SSL Policy (JSON): $SSL_POLICY";
+	echo "";
+};
+
+function debugSSLPolicyDetails() {
+	echo "SSL Policy Details (JSON): $SSL_POLICY_DETAILS";
+	echo "";
+};
+
+function printOutput() {
+	# Variables are global scope if they are not preceeded by the local keyword
+	if [[ $CSV != "True" ]]; then
+		echo "Project Name: $PROJECT_NAME";
+		echo "Project Application: $PROJECT_APPLICATION";
+		echo "Project Owner: $PROJECT_OWNER";
+		echo "Proxy Name: $PROXY_NAME";
+		echo "Proxy Type: $PROXY_TYPE";
+		echo "Encryption Status: $IS_IMPLEMENTING_ENCRYPTION_MESSAGE";
+		echo "Default Policy Status: $IS_USING_DEFAULT_POLICY_MESSAGE";
+		echo "TLS Policy: $SSL_POLICY_PROFILE";
+		echo "TLS Policy Status: $IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE";
+		echo "TLS Policy Minimum Version: $SSL_POLICY_MIN_VERSION";
+		echo "TLS Policy Minimum Version Status: $SSL_POLICY_MIN_VERSION_MESSAGE";
+		echo "TLS Ciphers: $SSL_POLICY_CIPHER_SUITES";		
+		echo "";
+	else
+		echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$PROXY_NAME\", \"$PROXY_TYPE\", \"$SSL_POLICY_MIN_VERSION\", \"$IS_IMPLEMENTING_ENCRYPTION\", \"$IS_USING_DEFAULT_POLICY\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE\", \"$IS_SSL_POLICY_MIN_VERSION_SECURE\", \"$IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"$IS_USING_DEFAULT_POLICY_MESSAGE\", \"$SSL_POLICY_PROFILE\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"$SSL_POLICY_MIN_VERSION_MESSAGE\", \"$SSL_POLICY_CIPHER_SUITES\"";
+	fi; # end if $CSV != "True"
+};
+
+function printCSVHeaderRow() {
+	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"PROXY_NAME\", \"PROXY_TYPE\", \"SSL_POLICY_MIN_VERSION\", \"IS_IMPLEMENTING_ENCRYPTION\", \"IS_USING_DEFAULT_POLICY\", \"IS_USING_SECURE_SSL_POLICY_PROFILE\", \"IS_SSL_POLICY_MIN_VERSION_SECURE\", \"IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"IS_USING_DEFAULT_POLICY_MESSAGE\", \"SSL_POLICY_PROFILE\", \"IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"SSL_POLICY_MIN_VERSION_MESSAGE\", \"SSL_POLICY_CIPHER_SUITES\"";
+};
+
+function processSSLPolicy() {
+	# Variables are global scope if they are not preceeded by the local keyword
+	IS_IMPLEMENTING_ENCRYPTION="True";
+	IS_IMPLEMENTING_ENCRYPTION_MESSAGE="The proxy implements transport layer encryption";
+	IS_USING_DEFAULT_POLICY="False";
+	IS_USING_DEFAULT_POLICY_MESSAGE="The proxy does not implement the default TLS";
+	
+	SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
+	
+	if [[ $DEBUG == "True" ]]; then
+		debugSSLPolicyDetails;
+	fi; # end if $DEBUG == "True"
+	
+	SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile // empty');
+	SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion // empty');
+	SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] // empty');
+
+	if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then 
+		IS_USING_SECURE_SSL_POLICY_PROFILE="False";
+		IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE="The SSL Policy Profile is insecure";
+	fi;
+
+	if [[ $SSL_POLICY_PROFILE == "MODERN" || $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then
+		IS_USING_SECURE_SSL_POLICY_PROFILE="True";
+		IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE="The SSL Policy Profile is secure";
+	fi;
+	
+	if [[ $SSL_POLICY_PROFILE == "CUSTOM" ]]; then
+		IS_USING_SECURE_SSL_POLICY_PROFILE="Unknown";
+		IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE="The SSL Policy Profile may be secure";
+	fi;
+	
+	if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then	
+		IS_SSL_POLICY_MIN_VERSION_SECURE="True";
+		SSL_POLICY_MIN_VERSION_MESSAGE="The TLS Minimum Version is secure";
+	else
+		IS_SSL_POLICY_MIN_VERSION_SECURE="False";
+		SSL_POLICY_MIN_VERSION_MESSAGE="The TLS Minimum Version is insecure";
+	fi; # end if $SSL_POLICY_MIN_VERSION == "TLS_1_2"
+};
+
+declare PROJECT_IDS="";
+declare DEBUG="False";
+declare CSV="False";
+declare ICH="False";
+declare HELP=$(cat << EOL
+	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
 EOL
 );
 
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help") 			set -- "$@" "-h" ;;
+    "--debug") 			set -- "$@" "-d" ;;
+    "--csv") 			set -- "$@" "-c" ;;
+    "--include-column-headers") set -- "$@" "-i" ;;
+    "--project")   		set -- "$@" "-p" ;;
+    *)        			set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdp:" option
+while getopts "hdcip:" option
 do 
     case "${option}"
         in
         p)
-        	PROJECT_IDS=${OPTARG};;
+        	PROJECT_ID=${OPTARG};;
         d)
         	DEBUG="True";;
+        c)
+        	CSV="True";;
+	i)
+		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
     esac;
 done;
 
-if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+if [[ $PROJECT_ID == "" ]]; then
+    declare PROJECTS=$(gcloud projects list --format="json");
+else
+    declare PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
 fi;
 
-declare SEPARATOR="----------------------------------------------------------------------------------------";
+if [[ $DEBUG == "True" ]]; then
+	debugProjects;
+fi;
 
-for PROJECT_ID in $PROJECT_IDS; do
+if [[ $PROJECTS != "[]" ]]; then
 
+    if [[ $ICH == "True" ]]; then
+    	printCSVHeaderRow;
+    fi;
+
+    echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
+
+	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
+		
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 	
 	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+		fi;
+		continue;
+	fi;
 
 	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 	PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
 	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
-	echo "";
-	echo $SEPARATOR;
-	echo "Project Name: $PROJECT_NAME";
-	echo "Project Application: $PROJECT_APPLICATION";
-	echo "Project Owner: $PROJECT_OWNER";
-	echo "";
 
+	PROXY_TYPE="HTTP Load Balancers";
+	initializeVariables;
+	
 	declare RESULTS=$(gcloud compute target-http-proxies list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
-		
-		echo $SEPARATOR;
-		echo "Insecure HTTP Load Balancers for project $PROJECT_ID";
-		echo $SEPARATOR;
-		echo "";
-		
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r HTTP_PROXY;do
-			NAME=$(echo $HTTP_PROXY | jq -rc '.name');
-			echo "Name: $NAME (Insecure)";
-		done;
-		echo "";
-	else
-		echo $SEPARATOR;
-		echo "No HTTP Load Balancers found for $PROJECT_ID";
-		echo "";
-	fi;
 	
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
+		
+			if [[ $DEBUG == "True" ]]; then
+				debugProxy;
+			fi; # end if $DEBUG == "True"
+
+			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+			printOutput;
+
+		done; # looping through PROXY
+		
+	else # there are no results
+		if [[ $CSV != "True" ]]; then
+			echo "No $PROXY_TYPE found for $PROJECT_ID";
+			echo "";
+		fi;
+	fi; # end if $RESULTS != "[]"
+
+	
+	PROXY_TYPE="TCP Load Balancers";
+	initializeVariables;
+
 	declare RESULTS=$(gcloud compute target-tcp-proxies list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
+	
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
 		
-		echo $SEPARATOR;
-		echo "Insecure TCP Load Balancers for project $PROJECT_ID";
-		echo $SEPARATOR;
-		echo "";
+			if [[ $DEBUG == "True" ]]; then
+				debugProxy;
+			fi; # end if $DEBUG == "True"
+
+			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+			printOutput;
+
+		done; # looping through PROXY
 		
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r TCP_PROXY;do
-			NAME=$(echo $TCP_PROXY | jq -rc '.name');
-			echo "Name: $NAME (Insecure)";
-		done;
-		echo "";
-	else
-		echo $SEPARATOR;
-		echo "No TCP Load Balancers found for $PROJECT_ID";
-		echo "";
-	fi;
+	else # there are no results
+		if [[ $CSV != "True" ]]; then
+			echo "No $PROXY_TYPE found for $PROJECT_ID";
+			echo "";
+		fi;
+	fi; # end if $RESULTS != "[]"
+
+
+	PROXY_TYPE="TLS (SSL) Load Balancers";
+	initializeVariables;
 
 	declare RESULTS=$(gcloud compute target-ssl-proxies list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
-		
-		echo $SEPARATOR;
-		echo "TLS Load Balancers for project $PROJECT_ID";
-		echo $SEPARATOR;
-		echo "";
-		
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r SSL_PROXY;do
-			NAME=$(echo $SSL_PROXY | jq -rc '.name');
-			SSL_POLICY=$(echo $SSL_PROXY | jq -rc '.sslPolicy');
 
-			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
 
-			if [[ $SSL_POLICY == "null" ]]; then
-				echo "VIOLATION: Using default TLS policy";
-			else
-				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
-				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
-				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
-				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
+			if [[ $DEBUG == "True" ]]; then
+				debugProxy;
+			fi; # end if $DEBUG == "True"
+			
+			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+			SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
 
-				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "VIOLATION: Using insecure TLS policy"; fi;
-				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
-					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
-						echo "Note: Secure TLS policy detected"; 
-					else
-						"VIOLATION: Using insecure TLS policy"; 
-					fi;
-				fi;
-				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;
-				if [[ $SSL_POLICY_PROFILE == "CUSTOM" ]]; then
-					echo "Warning: Custom TLS policy. Insecure ciphers listed below";
-					echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] | select(. | test("^TLS_RSA_"))';
-				fi;
-			fi;
+			if [[ $DEBUG == "True" ]]; then
+				debugSSLPolicy;
+			fi; # end if $DEBUG == "True"
+			
+			if [[ $SSL_POLICY != "" ]]; then
+				processSSLPolicy;
+			fi; # end if $SSL_POLICY == ""
+
+			printOutput;
+
+		done; # looping through PROXY
+
+	else # there are no results
+		if [[ $CSV != "True" ]]; then
+			echo "No $PROXY_TYPE found for $PROJECT_ID";
 			echo "";
-		done;
-		echo "";
-	else
-		echo $SEPARATOR;
-		echo "No TLS Load Balancers found for $PROJECT_ID";
-		echo "";
-	fi;
+		fi;
+	fi; # end if $RESULTS != "[]"
+
+
+	PROXY_TYPE="HTTPS Load Balancers";
+	initializeVariables;
 
 	declare RESULTS=$(gcloud compute target-https-proxies list --quiet --format="json");
 
 	if [[ $RESULTS != "[]" ]]; then
-		
-		echo $SEPARATOR;
-		echo "HTTPS Load Balancers for project $PROJECT_ID";
-		echo $SEPARATOR;
-		echo "";
-		
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r HTTPS_PROXY;do
-			NAME=$(echo $HTTPS_PROXY | jq -rc '.name');
-			SSL_POLICY=$(echo $HTTPS_PROXY | jq -rc '.sslPolicy');
 
-			echo "Name: $NAME $DEFAULT_POLICY_VIOLATION";
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
 
-			if [[ $SSL_POLICY == "null" ]]; then
-				echo "VIOLATION: Using default TLS policy";
-			else
-				SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
-				SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile');
-				SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion');
-				SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures');
+			if [[ $DEBUG == "True" ]]; then
+				debugProxy;
+			fi; # end if $DEBUG == "True"
+			
+			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+			SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
 
-				if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then echo "VIOLATION: Using insecure TLS policy"; fi;
-				if [[ $SSL_POLICY_PROFILE == "MODERN" ]]; then
-					if [[ $SSL_POLICY_MIN_VERSION == "TLS_1_2" ]]; then
-						echo "Note: Secure TLS policy detected"; 
-					else
-						"VIOLATION: Using insecure TLS policy"; 
-					fi;
-				fi;
-				if [[ $SSL_POLICY_PROFILE == "RESTRICTED" ]]; then echo "Note: Secure TLS policy detected"; fi;
-				if [[ $SSL_POLICY_PROFILE == "CUSTOM" ]]; then
-					echo "Warning: Custom TLS policy. Insecure ciphers listed below";
-					echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] | select(. | test("^TLS_RSA_"))';
-				fi;
-			fi;
+			if [[ $DEBUG == "True" ]]; then
+				debugSSLPolicy;
+			fi; # end if $DEBUG == "True"
+			
+			if [[ $SSL_POLICY != "" ]]; then
+				processSSLPolicy;
+			fi; # end if $SSL_POLICY == ""
+
+			printOutput;
+
+		done; # looping through PROXY
+
+	else # there are no results
+		if [[ $CSV != "True" ]]; then
+			echo "No $PROXY_TYPE found for $PROJECT_ID";
 			echo "";
-		done;
-		echo "";
-	else
-		echo $SEPARATOR;
-		echo "No HTTPS Load Balancers found for $PROJECT_ID";
-		echo "";
-	fi;
+		fi;
+	fi; # end if $RESULTS != "[]"
 	
-	sleep 0.5;
+	#sleep 0.5;
 
-done;
+    done; # looping through projects
+    
+else # if no projects
+	if [[ $CSV != "True" ]]; then
+    		echo "No projects found";
+    		echo "";
+	fi;
+fi; # if projects
 
