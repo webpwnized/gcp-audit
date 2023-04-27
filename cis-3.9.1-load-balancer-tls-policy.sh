@@ -10,8 +10,8 @@ function initializeVariables() {
 	SSL_POLICY_CIPHER_SUITES="";
 	IS_IMPLEMENTING_ENCRYPTION="False";
 	IS_IMPLEMENTING_ENCRYPTION_MESSAGE="The proxy does not implement transport layer encryption";
-	IS_USING_DEFAULT_POLICY="True";
-	IS_USING_DEFAULT_POLICY_MESSAGE="The proxy implements the default TLS policy";
+	IS_USING_DEFAULT_POLICY="Not Applicable";
+	IS_USING_DEFAULT_POLICY_MESSAGE="The proxy does not implement the default TLS policy";
 	SSL_POLICY_PROFILE="None";
 	IS_USING_SECURE_SSL_POLICY_PROFILE="False";
 	IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE="The SSL Policy Profile is insecure";
@@ -55,19 +55,20 @@ function printOutput() {
 		echo "Proxy Type: $PROXY_TYPE";
 		echo "Encryption Status: $IS_IMPLEMENTING_ENCRYPTION_MESSAGE";
 		echo "Default Policy Status: $IS_USING_DEFAULT_POLICY_MESSAGE";
-		echo "TLS Policy: $SSL_POLICY_PROFILE";
+		echo "TLS Policy Name: $SSL_POLICY_NAME";
+		echo "TLS Policy Profile: $SSL_POLICY_PROFILE";
 		echo "TLS Policy Status: $IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE";
 		echo "TLS Policy Minimum Version: $SSL_POLICY_MIN_VERSION";
 		echo "TLS Policy Minimum Version Status: $SSL_POLICY_MIN_VERSION_MESSAGE";
 		echo "TLS Ciphers: $SSL_POLICY_CIPHER_SUITES";		
 		echo "";
 	else
-		echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$PROXY_NAME\", \"$PROXY_TYPE\", \"$SSL_POLICY_MIN_VERSION\", \"$IS_IMPLEMENTING_ENCRYPTION\", \"$IS_USING_DEFAULT_POLICY\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE\", \"$IS_SSL_POLICY_MIN_VERSION_SECURE\", \"$IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"$IS_USING_DEFAULT_POLICY_MESSAGE\", \"$SSL_POLICY_PROFILE\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"$SSL_POLICY_MIN_VERSION_MESSAGE\", \"$SSL_POLICY_CIPHER_SUITES\"";
+		echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$PROXY_NAME\", \"$PROXY_TYPE\", \"$SSL_POLICY_NAME\", \"$SSL_POLICY_MIN_VERSION\", \"$IS_IMPLEMENTING_ENCRYPTION\", \"$IS_USING_DEFAULT_POLICY\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE\", \"$IS_SSL_POLICY_MIN_VERSION_SECURE\", \"$IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"$IS_USING_DEFAULT_POLICY_MESSAGE\", \"$SSL_POLICY_PROFILE\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"$SSL_POLICY_MIN_VERSION_MESSAGE\", \"$SSL_POLICY_CIPHER_SUITES\"";
 	fi; # end if $CSV != "True"
 };
 
 function printCSVHeaderRow() {
-	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"PROXY_NAME\", \"PROXY_TYPE\", \"SSL_POLICY_MIN_VERSION\", \"IS_IMPLEMENTING_ENCRYPTION\", \"IS_USING_DEFAULT_POLICY\", \"IS_USING_SECURE_SSL_POLICY_PROFILE\", \"IS_SSL_POLICY_MIN_VERSION_SECURE\", \"IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"IS_USING_DEFAULT_POLICY_MESSAGE\", \"SSL_POLICY_PROFILE\", \"IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"SSL_POLICY_MIN_VERSION_MESSAGE\", \"SSL_POLICY_CIPHER_SUITES\"";
+	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"PROXY_NAME\", \"PROXY_TYPE\", \"SSL_POLICY_NAME\", \"SSL_POLICY_MIN_VERSION\", \"IS_IMPLEMENTING_ENCRYPTION\", \"IS_USING_DEFAULT_POLICY\", \"IS_USING_SECURE_SSL_POLICY_PROFILE\", \"IS_SSL_POLICY_MIN_VERSION_SECURE\", \"IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"IS_USING_DEFAULT_POLICY_MESSAGE\", \"SSL_POLICY_PROFILE\", \"IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"SSL_POLICY_MIN_VERSION_MESSAGE\", \"SSL_POLICY_CIPHER_SUITES\"";
 };
 
 function processSSLPolicy() {
@@ -79,13 +80,19 @@ function processSSLPolicy() {
 	
 	SSL_POLICY_DETAILS=$(gcloud compute ssl-policies describe --quiet --format="json" $SSL_POLICY);
 	
+	if [[ $SSL_POLICY_DETAILS == "" ]]; then
+		IS_USING_DEFAULT_POLICY="True";
+		IS_USING_DEFAULT_POLICY_MESSAGE="The proxy implements the default TLS";
+	fi; # end if $DEBUG == "True"
+		
 	if [[ $DEBUG == "True" ]]; then
 		debugSSLPolicyDetails;
 	fi; # end if $DEBUG == "True"
 	
+	SSL_POLICY_NAME=$(echo $SSL_POLICY_DETAILS | jq -rc '.name // empty');
 	SSL_POLICY_PROFILE=$(echo $SSL_POLICY_DETAILS | jq -rc '.profile // empty');
 	SSL_POLICY_MIN_VERSION=$(echo $SSL_POLICY_DETAILS | jq -rc '.minTlsVersion // empty');
-	SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures[] // empty');
+	SSL_POLICY_CIPHER_SUITES=$(echo $SSL_POLICY_DETAILS | jq -rc '.enabledFeatures // empty');
 
 	if [[ $SSL_POLICY_PROFILE == "COMPATIBLE" ]]; then 
 		IS_USING_SECURE_SSL_POLICY_PROFILE="False";
@@ -116,7 +123,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -126,7 +133,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -142,8 +148,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -162,7 +166,7 @@ fi;
 
 if [[ $PROJECTS != "[]" ]]; then
 
-    if [[ $ICH == "True" ]]; then
+    if [[ $CSV == "True" ]]; then
     	printCSVHeaderRow;
     fi;
 
