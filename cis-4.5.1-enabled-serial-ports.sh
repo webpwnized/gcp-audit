@@ -58,8 +58,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
 	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID";
-		continue;
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+			continue;
+		fi;
 	fi;
 
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
