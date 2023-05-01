@@ -8,7 +8,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -18,7 +18,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -34,8 +33,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -49,10 +46,11 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
+	echo "";
 fi;
 
-if [[ $ICH == "True" ]]; then
-	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"INSTANCE_NAME\", \"ENABLED_SERIAL_PORTS\", \"ENABLED_SERIAL_PORTS_STATUS_MESSAGE\"";
+if [[ $CSV == "True" ]]; then
+	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"INSTANCE_NAME\", \"ENABLED_SERIAL_PORTS\", \"ENABLED_SERIAL_PORT_LOGGING\", \"ENABLED_SERIAL_PORTS_STATUS_MESSAGE\", \"ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
@@ -60,22 +58,17 @@ for PROJECT_ID in $PROJECT_IDS; do
 	gcloud config set project $PROJECT_ID 2>/dev/null;
 
 	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+		echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+		continue;
+	fi;
 
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Instances (JSON): $INSTANCES";
+		echo "";
 	fi;
 
-	if [[ $CSV != "True" ]]; then
-		echo $SEPARATOR;
-		echo "Instances for Project $PROJECT_ID";
-		echo $SEPARATOR;
-	fi;
-	
 	if [[ $INSTANCES != "[]" ]]; then
 
 		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
@@ -84,15 +77,39 @@ for PROJECT_ID in $PROJECT_IDS; do
 		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
+		
+			if [[ $DEBUG == "True" ]]; then
+				echo "Instance (JSON): $INSTANCES";
+				echo "";
+			fi;
 
 			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');
 			ENABLED_SERIAL_PORTS=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="serial-port-enable")' | jq -rc '.value' | tr '[:upper:]' '[:lower:]' );
+			ENABLED_SERIAL_PORT_LOGGING=$(echo $INSTANCE | jq -rc '.metadata.items[] | select(.key=="serial-port-logging-enable")' | jq -rc '.value' | tr '[:upper:]' '[:lower:]' );
 			ENABLED_SERIAL_PORTS_STATUS_MESSAGE="Serial port disabled";
+			ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE="Serial port logging enabled";
+
+			if [[ $DEBUG == "True" ]]; then
+				echo "Instance Metadata (JSON): $(echo $INSTANCE | jq -rc '.metadata.items[]')";
+				echo "";
+			fi;
 			
-			if [[ $ENABLED_SERIAL_PORTS != "0" && $ENABLED_SERIAL_PORTS != "" ]]; then
+			if [[ $ENABLED_SERIAL_PORTS == "" ]]; then
+				ENABLED_SERIAL_PORTS="false";
+			fi;
+			
+			if [[ $ENABLED_SERIAL_PORT_LOGGING == "" ]]; then
+				ENABLED_SERIAL_PORT_LOGGING="false";
+			fi;			
+			
+			if [[ $ENABLED_SERIAL_PORTS == "true" ]]; then
 				ENABLED_SERIAL_PORTS_STATUS_MESSAGE="VIOLATION: Serial port enabled";
 			fi;
 			
+			if [[ $ENABLED_SERIAL_PORT_LOGGING != "true" ]]; then
+				ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE="VIOLATION: Serial port logging disabled";
+			fi;
+
 			# Print the results gathered above
 			if [[ $CSV != "True" ]]; then
 				echo "Project ID: $PROJECT_ID";
@@ -102,9 +119,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Instance Name: $INSTANCE_NAME";
 				echo "Serial Port Setting: $ENABLED_SERIAL_PORTS";
 				echo "Serial Port Status: $ENABLED_SERIAL_PORTS_STATUS_MESSAGE";
+				echo "Serial Port Logging Setting: $ENABLED_SERIAL_PORT_LOGGING";
+				echo "Serial Port Logging Status: $ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE";
 				echo "";
 			else
-				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE_NAME\", \"$ENABLED_SERIAL_PORTS\", \"$ENABLED_SERIAL_PORTS_STATUS_MESSAGE\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE_NAME\", \"$ENABLED_SERIAL_PORTS\", \"$ENABLED_SERIAL_PORT_LOGGING\", \"$ENABLED_SERIAL_PORTS_STATUS_MESSAGE\", \"$ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE\"";
 			fi;		
 
 		done;
