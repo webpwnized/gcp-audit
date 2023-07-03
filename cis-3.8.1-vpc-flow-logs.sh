@@ -42,7 +42,7 @@ do
 done;
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+    declare PROJECT_IDS=$(get_projects);
 fi;
 
 if [[ $ICH == "True" ]]; then

@@ -53,7 +53,7 @@ declare SINK_FILTER_IS_REQUIRED_DEFAULT_MESSAGE="NOTICE: Google _Required log si
 declare SINK_FILTER_IS_NOT_DEFAULT_MESSAGE="NOTICE: Custom log sink filter is in use";
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+    declare PROJECT_IDS=$(get_projects);
 fi;
 
 if [[ $DEBUG == "True" ]]; then
