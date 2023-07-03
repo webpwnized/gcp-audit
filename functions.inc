@@ -12,3 +12,15 @@ api_enabled(){
 		return $ENABLED;
 	fi;
 }
+
+function get_projects() {
+    gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2;
+}
+
+
+
+
+
+
+
+
