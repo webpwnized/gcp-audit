@@ -7,7 +7,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -17,7 +17,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -33,8 +32,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -56,7 +53,7 @@ fi;
 
 if [[ $PROJECTS != "[]" ]]; then
 
-    if [[ $ICH == "True" ]]; then
+    if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"INSTANCE_NAME\", \"NETWORK\", \"SUBNETWORK\", \"INTERFACE_NAME\", \"IP_ADDRESS\", \"IS_GKE_NODE\", \"EXTERNAL_IP_STATUS_MESSAGE\"";
     fi;
 
