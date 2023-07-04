@@ -10,7 +10,7 @@ if [[ $RESULTS != "[]" ]]; then
 		APPLICATION=$(echo $PROJECT | jq -rc '.labels.app');
 		OWNER=$(echo $PROJECT | jq -rc '.labels.adid');
 		
-		echo "$NAME: $OWNER";
+		echo "$NAME ($APPLICATION): $OWNER";
 	done;
 else
 	echo "No projects found";
