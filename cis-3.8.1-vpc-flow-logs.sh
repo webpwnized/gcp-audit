@@ -7,7 +7,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -17,7 +17,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -33,8 +32,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)	
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -45,7 +42,7 @@ if [[ $PROJECT_IDS == "" ]]; then
     declare PROJECT_IDS=$(get_projects);
 fi;
 
-if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"SUBNET_NAME\", \"IP_RANGE\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_AGGREGATION_INTERVAL\", \"FLOW_LOG_SAMPLE_RATE\", \"FLOW_LOG_METADATA_CONFIGURATION\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_STATUS_MESSAGE\", \"FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 fi;
 
