@@ -38,8 +38,8 @@ if [[ $PROJECT_IDS == "" ]]; then
 	declare PROJECT_IDS=$(get_projects);
 fi;
 
-for PROJECT_ID in $PROJECT_IDS; do	
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+for PROJECT_ID in $PROJECT_IDS; do
+	set_project $PROJECT_ID;	
 
 	if ! api_enabled sqladmin.googleapis.com; then
 		echo "Cloud SQL API not enabled on Project $PROJECT_ID.";

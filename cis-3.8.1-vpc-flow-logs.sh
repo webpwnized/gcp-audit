@@ -55,7 +55,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		continue
 	fi
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 
 	declare SUBNETS=$(gcloud compute networks subnets list --format json);
 	

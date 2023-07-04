@@ -17,10 +17,7 @@ function get_projects() {
     gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2;
 }
 
-
-
-
-
-
-
-
+function set_project() {
+    local PROJECT_ID=$1;
+    gcloud config set project $PROJECT_ID 2>/dev/null;
+}

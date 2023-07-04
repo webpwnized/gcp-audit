@@ -69,7 +69,7 @@ if [[ $PROJECT_IDS != "[]" ]]; then
 	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 
 	declare RESULTS=$(gcloud compute firewall-rules list --quiet --format="json");
 
