@@ -8,7 +8,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -18,7 +18,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")	   	set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -34,8 +33,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -51,13 +48,13 @@ if [[ $DEBUG == "True" ]]; then
 	echo "";
 fi;
 
-if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"INSTANCE_NAME\", \"SERVICE_ACCOUNTS\", \"IS_SA_VIOLATION\", \"IS_ROLE_VIOLATION\", \"ROLES\", \"ROLES_STATUS_MESSAGE\", \"SERVICE_ACCOUNT_STATUS_MESSAGE\", \"SCOPES\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 	
 	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then

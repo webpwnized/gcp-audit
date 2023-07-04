@@ -6,7 +6,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-r,--role] [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-r,--role] [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -16,7 +16,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--role") 			set -- "$@" "-r" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
@@ -35,8 +34,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -51,7 +48,7 @@ fi;
 
 if [[ $PROJECT_IDS != "[]" ]]; then
 
-    if [[ $ICH == "True" ]]; then
+    if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"ACCOUNT\", \"ACCOUNT_TYPE\", \"ENVIRONMENT\"";
     fi;
 

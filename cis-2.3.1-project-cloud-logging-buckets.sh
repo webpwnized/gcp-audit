@@ -8,7 +8,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -18,7 +18,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -34,8 +33,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -50,13 +47,13 @@ if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
 fi;
 
-if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"BUCKET_NAME_SHORT\", \"BUCKET_NAME_LOCATION\", \"BUCKET_LIFECYCLE_STATE\", \"BUCKET_RETENTION_DAYS\", \"BUCKET_DESCRIPTION\", \"BUCKET_RETENTION_WARNING\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 
 	if ! api_enabled logging.googleapis.com; then
 		if [[ $CSV != "True" ]]; then

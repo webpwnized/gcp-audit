@@ -41,7 +41,7 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 
 	if ! api_enabled cloudfunctions.googleapis.com; then
 		echo "Cloud Functions not enabled for Project $PROJECT_ID.";

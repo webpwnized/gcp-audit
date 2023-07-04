@@ -8,7 +8,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-o, --organization ORGANIZATION] [-f, --folder FOLDER] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-o, --organization ORGANIZATION] [-f, --folder FOLDER] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -18,7 +18,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--orgnanization")   	set -- "$@" "-o" ;;
     "--folder")   		set -- "$@" "-f" ;;
     *)        			set -- "$@" "$arg"
@@ -37,8 +36,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-        i) 	
-		ICH="True";;
 	h)
         	echo $HELP; 
         	exit 0;;
@@ -68,7 +65,7 @@ if [[ $DEBUG == "True" ]]; then
 	echo "Organizations (JSON): $ORGANIZATIONS";
 fi;
 
-if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"ORGANIZATION_DISPLAY_NAME\", \"FOLDER_DISPLAY_NAME\", \"SINK_NAME\", \"SINK_DESTINATION\", \"SINK_FILTER_IS_DEFAULT_DEFAULT\", \"SINK_FILTER_IS_REQUIRED_DEFAULT\", \"SINK_FILTER_MESSAGE\", \"SINK_FILTER\"";
 fi;
 
