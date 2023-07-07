@@ -55,9 +55,11 @@ if [[ $PROJECT_IDS != "[]" ]]; then
     echo $PROJECT_IDS | jq -rc '.[]' | while IFS='' read PROJECT_ID;do
 
 	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+			continue;
+		fi;
+	fi;
 
 	# Get the project details
 	PROJECT_ID=$(echo $PROJECT_ID | jq -r '.projectId');
