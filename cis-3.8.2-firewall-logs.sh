@@ -52,11 +52,14 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
 
-    if ! api_enabled compute.googleapis.com; then
-        echo "Compute Engine API is not enabled on Project $PROJECT_ID"
- 	continue
-    fi
-	set_project $PROJECT_ID;
+if ! api_enabled compute.googleapis.com; then
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+			continue;
+		fi;
+fi;
+  
+set_project $PROJECT_ID;
 
 	# Get the project details
 	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
