@@ -54,7 +54,6 @@ if ! api_enabled compute.googleapis.com; then
     continue
 fi
 
-set_project $PROJECT_ID;
 
 PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
