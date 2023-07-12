@@ -48,6 +48,11 @@ if [[ $CSV == "True" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
+set_project $PROJECT_ID;
+if ! api_enabled compute.googleapis.com; then
+    echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+    continue
+fi
 
 set_project $PROJECT_ID;
 
