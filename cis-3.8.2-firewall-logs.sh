@@ -7,7 +7,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -17,7 +17,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -33,8 +32,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -42,34 +39,33 @@ do
 done;
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="json");
-else
-    declare PROJECT_IDS=$(gcloud projects list --format="json" --filter="name:$PROJECT_IDS");
+    declare PROJECT_IDS=$(get_projects);
+
 fi;
 
 declare SEPARATOR="----------------------------------------------------------------------------------------";
 
-if [[ $PROJECT_IDS != "[]" ]]; then
 
-    if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"FIREWALL_RULE_NAME\", \"LOG_CONFIG\", \"LOG_CONFIG_STATUS_MESSAGE\"";	
-    fi;
+fi;
 
-    echo $PROJECT_IDS | jq -rc '.[]' | while IFS='' read PROJECT_ID;do
+for PROJECT_ID in $PROJECT_IDS; do
 
-	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+if ! api_enabled compute.googleapis.com; then
+		if [[ $CSV != "True" ]]; then
+			echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+			continue;
+		fi;
+fi;
+  
+set_project $PROJECT_ID;
 
 	# Get the project details
-	PROJECT_ID=$(echo $PROJECT_ID | jq -r '.projectId');
 	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-	PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
-	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+   	PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
+    	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+    	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 	declare RESULTS=$(gcloud compute firewall-rules list --quiet --format="json");
 
@@ -106,7 +102,7 @@ if [[ $PROJECT_IDS != "[]" ]]; then
 				echo "Project Application: $PROJECT_APPLICATION";
 				echo "Project Owner: $PROJECT_OWNER";
 				echo "Logging: $LOG_CONFIG";
-				echo $LOG_CONFIG_STATUS_MESSAGE;
+				echo "Logging Status: $LOG_CONFIG_STATUS_MESSAGE";
 				echo "";
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$FIREWALL_RULE_NAME\", \"$LOG_CONFIG\", \"$LOG_CONFIG_STATUS_MESSAGE\"";
@@ -121,10 +117,6 @@ if [[ $PROJECT_IDS != "[]" ]]; then
 	fi;
 	sleep 0.5;
     done;
-else
-	if [[ $CSV != "True" ]]; then
-    		echo "No projects found";
-    		echo "";
-	fi;
-fi;
+
+
 

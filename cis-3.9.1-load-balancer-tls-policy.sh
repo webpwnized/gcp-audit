@@ -174,7 +174,7 @@ if [[ $PROJECTS != "[]" ]]; then
 
 	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
 		
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 	
 	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then

@@ -39,7 +39,7 @@ do
 done;
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+    declare PROJECT_IDS=$(get_projects);
 fi;
 
 if [[ $DEBUG == "True" ]]; then
@@ -49,7 +49,7 @@ fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
 	
 	if ! api_enabled appengine.googleapis.com; then
 		if [[ $CSV != "True" ]]; then

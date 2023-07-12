@@ -7,7 +7,7 @@ declare DEBUG="False";
 declare CSV="False";
 declare ICH="False";
 declare HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-c, --csv] [-i, --include-column-headers] [-d, --debug] [-h, --help]	
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
 );
 
@@ -17,7 +17,6 @@ for arg in "$@"; do
     "--help") 			set -- "$@" "-h" ;;
     "--debug") 			set -- "$@" "-d" ;;
     "--csv") 			set -- "$@" "-c" ;;
-    "--include-column-headers") set -- "$@" "-i" ;;
     "--project")   		set -- "$@" "-p" ;;
     *)        			set -- "$@" "$arg"
   esac
@@ -33,8 +32,6 @@ do
         	DEBUG="True";;
         c)
         	CSV="True";;
-	i)	
-		ICH="True";;
         h)
         	echo $HELP; 
         	exit 0;;
@@ -42,20 +39,21 @@ do
 done;
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2);
+    declare PROJECT_IDS=$(get_projects);
 fi;
 
-if [[ $ICH == "True" ]]; then
+if [[ $CSV == "True" ]]; then
 	echo "\"PROJECT_ID\", \"PROJECT_NAME\", \"PROJECT_OWNER\", \"PROJECT_APPLICATION\", \"SUBNET_NAME\", \"IP_RANGE\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_AGGREGATION_INTERVAL\", \"FLOW_LOG_SAMPLE_RATE\", \"FLOW_LOG_METADATA_CONFIGURATION\", \"FLOW_LOGS_ENABLED\", \"FLOW_LOG_STATUS_MESSAGE\", \"FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
 
-	gcloud config set project $PROJECT_ID 2>/dev/null;
+	set_project $PROJECT_ID;
+
+	if ! api_enabled compute.googleapis.com ; then
+		echo "Compute Engine API is not enabled on Project $PROJECT_ID";
+		continue;
+	fi;
 
 	declare SUBNETS=$(gcloud compute networks subnets list --format json);
 	
