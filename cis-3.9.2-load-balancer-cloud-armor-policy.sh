@@ -1,24 +1,21 @@
 #!/bin/bash
 
-source functions.inc
+source functions.inc;
 
 function listCloudArmorPolicies() {
     # Variables are global scope if they are not preceeded by the local keyword
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+    PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+    PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
     CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies list --format="json");
 
     if [[ $DEBUG == "True" ]]; then
         debugCloudArmorPolicies;
     fi;
 
-    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-    PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-    PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
     if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
         if [[ $CSV == "True" ]]; then
-
             echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"No Policy\"";
-
         else
             echo "No Cloud Armor Policies found for $PROJECT_ID";
             echo "";
@@ -28,7 +25,7 @@ function listCloudArmorPolicies() {
 
     echo $CLOUD_ARMOR_POLICIES | jq -r -c '.[]' | while IFS='' read -r POLICY; do
         CLOUD_ARMOR_POLICY_NAME=$(echo $POLICY | jq -rc '.name');
-        PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+        PROJECT_DETAILS=$(gcloud PROJECTS describe $PROJECT_ID --format="json");
         PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
         PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
@@ -46,6 +43,11 @@ function listCloudArmorPolicies() {
 
 function debugCloudArmorPolicies() {
     echo "Cloud Armor Policies (JSON): $CLOUD_ARMOR_POLICIES";
+    echo "";
+}
+
+function debugProjects() {
+    echo "Projects (JSON): $PROJECTS";
     echo "";
 }
 
@@ -87,11 +89,7 @@ while getopts "hdcip:" option; do
     esac;
 done;
 
-if [[ $PROJECT_ID == "" ]]; then
-    PROJECTS=$(gcloud projects list --format="json");
-else
-    PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
-fi;
+declare PROJECTS=$(get_projects);
 
 if [[ $PROJECTS == "[]" ]]; then
     echo "No projects found";
@@ -99,19 +97,25 @@ if [[ $PROJECTS == "[]" ]]; then
     exit 0;
 fi;
 
+if [[ $DEBUG == "True" ]]; then
+	debugProjects;
+fi;
+
 if [[ $CSV == "True" ]]; then
     printCSVHeaderRow;
 fi;
 
-echo $PROJECTS | jq -r -c '.[]' | while IFS='' read -r PROJECT; do
-    PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
+for PROJECT_ID in $PROJECTS; do
+
     set_project $PROJECT_ID;
+
     if ! api_enabled compute.googleapis.com; then
         if [[ $CSV != "True" ]]; then
             echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
         fi;
         continue;
     fi;
+
     listCloudArmorPolicies;
 done;
 
