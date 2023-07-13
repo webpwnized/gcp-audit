@@ -48,8 +48,12 @@ if [[ $CSV == "True" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-
 set_project $PROJECT_ID;
+if ! api_enabled compute.googleapis.com; then
+    echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+    continue
+fi
+
 
 PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
 PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
