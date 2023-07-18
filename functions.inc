@@ -14,7 +14,16 @@ api_enabled(){
 }
 
 function get_projects() {
-    gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2;
+
+	local PROJECT_ID=$1;
+	
+	if [[ $PROJECT_ID == "" ]]; then
+		# Get all projects
+		gcloud projects list --format="flattened(PROJECT_ID)" | grep project_id | cut -d " " -f 2;
+	else
+		# User wants to look at a specific project
+		echo "$PROJECT_ID";
+	fi;
 }
 
 function set_project() {

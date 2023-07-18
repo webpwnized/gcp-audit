@@ -188,7 +188,6 @@ if [[ $PROJECTS != "[]" ]]; then
 	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
 	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
-
 	PROXY_TYPE="HTTP Load Balancers";
 	initializeVariables;
 	

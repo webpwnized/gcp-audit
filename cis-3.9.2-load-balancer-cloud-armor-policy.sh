@@ -2,57 +2,92 @@
 
 source functions.inc;
 
+function hasHTTPLoadBalancer() {
+
+	local HTTP_LOAD_BALANCERS=$(gcloud compute target-http-proxies list --quiet --format="json");
+	local HTTPS_LOAD_BALANCERS=$(gcloud compute target-https-proxies list --quiet --format="json");
+	local TRUE=1;
+	local FALSE=0;
+	
+	if [[ $HTTP_LOAD_BALANCERS == "[]" ]]; then
+		if [[ $HTTPS_LOAD_BALANCERS == "[]" ]]; then
+			VALUE=$FALSE;
+		else
+			VALUE=$TRUE;
+		fi;
+	else
+		VALUE=$TRUE;
+	fi;
+	echo "$VALUE";
+	# TODO: Return value not working for unknown reason
+	#return "$VALUE";
+}
+
 function listCloudArmorPolicies() {
-    # Variables are global scope if they are not preceeded by the local keyword
-    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-    PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-    PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-    CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies list --format="json");
+	# Variables are global scope if they are not preceeded by the local keyword
+	PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
+	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
+	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+	CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies list --format="json");
+	
+	if [[ $DEBUG == "True" ]]; then
+		debugCloudArmorPolicies;
+	fi;
 
-    if [[ $DEBUG == "True" ]]; then
-        debugCloudArmorPolicies;
-    fi;
+	if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
+		if [[ $CSV == "True" ]]; then
+		    echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"No Policy\",\"\",\"\",\"\"";
+		else
+		    echo "No Cloud Armor policies found for project $PROJECT_ID";
+		    echo "";
+		fi;
+		return;
+	fi;
 
-    if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
-        if [[ $CSV == "True" ]]; then
-            echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"No Policy\"";
-        else
-            echo "No Cloud Armor Policies found for $PROJECT_ID";
-            echo "";
-        fi;
-        return;
-    fi;
-
-    echo $CLOUD_ARMOR_POLICIES | jq -r -c '.[]' | while IFS='' read -r POLICY; do
-        CLOUD_ARMOR_POLICY_NAME=$(echo $POLICY | jq -rc '.name');
-        PROJECT_DETAILS=$(gcloud PROJECTS describe $PROJECT_ID --format="json");
-        PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-        PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
-        if [[ $CSV == "True" ]]; then
-            echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"$CLOUD_ARMOR_POLICY_NAME\"";
-        else
-            echo "PROJECT_ID: $PROJECT_ID";
-            echo "PROJECT_APPLICATION: $PROJECT_APPLICATION";
-            echo "PROJECT_OWNER: $PROJECT_OWNER";
-	    echo "CLOUD_ARMOR_POLICY_NAME: $CLOUD_ARMOR_POLICY_NAME";
-            echo "";
-        fi;
-    done;
+	echo $CLOUD_ARMOR_POLICIES | jq -r -c '.[]' | while IFS='' read -r POLICY; do
+	
+		CLOUD_ARMOR_POLICY_NAME=$(echo $POLICY | jq -rc '.name');
+		CLOUD_ARMOR_POLICY_DDOS_PROTECTION_ENABLED=$(echo $POLICY | jq -rc '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable');
+		CLOUD_ARMOR_POLICY_RULES=$(echo $POLICY | jq -rc '.rules');
+	
+		if [[ $CSV == "True" ]]; then
+			echo $CLOUD_ARMOR_POLICY_RULES | jq -r -c '.[]' | while IFS='' read -r RULE; do
+			    	RULE_ACTION=$(echo $RULE | jq -rc '.action');
+			    	RULE_DESCRIPTION=$(echo $RULE | jq -rc '.description');
+			    	RULE_MATCH=$(echo $RULE | jq -rc '.match');
+				echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"$CLOUD_ARMOR_POLICY_NAME\",\"$RULE_DESCRIPTION\",\"$RULE_ACTION\",\"$RULE_MATCH\"";
+			done;
+		else
+		    echo "Project: $PROJECT_ID";
+		    echo "Application: $PROJECT_APPLICATION";
+		    echo "Owner: $PROJECT_OWNER";
+		    echo "Cloud Armor Policy Name: $CLOUD_ARMOR_POLICY_NAME";
+		    echo $CLOUD_ARMOR_POLICY_RULES | jq -r -c '.[]' | while IFS='' read -r RULE; do
+		    	RULE_ACTION=$(echo $RULE | jq -rc '.action');
+		    	RULE_DESCRIPTION=$(echo $RULE | jq -rc '.description');
+		    	RULE_MATCH=$(echo $RULE | jq -rc '.match');
+		    	echo "";
+		    	echo "Rule Description: $RULE_DESCRIPTION";
+		    	echo "Rule Action: $RULE_ACTION";
+		    	echo "Rule Match: $RULE_MATCH";
+		    done;
+		    echo "";
+		fi;
+	done;
 }
 
 function debugCloudArmorPolicies() {
-    echo "Cloud Armor Policies (JSON): $CLOUD_ARMOR_POLICIES";
-    echo "";
+	echo "Cloud Armor Policies (JSON): $CLOUD_ARMOR_POLICIES";
+	echo "";
 }
 
 function debugProjects() {
-    echo "Projects (JSON): $PROJECTS";
-    echo "";
+	echo "Projects (JSON): $PROJECTS";
+	echo "";
 }
 
 function printCSVHeaderRow() {
-    echo "\"PROJECT_ID\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\" \"CLOUD_ARMOR_POLICY_NAME\"";
+	echo "\"PROJECT_ID\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\" \"CLOUD_ARMOR_POLICY_NAME\",\"RULE_DESCRIPTION\",\"RULE_ACTION\",\"RULE_MATCH\"";
 }
 
 declare DEBUG="False";
@@ -89,7 +124,7 @@ while getopts "hdcip:" option; do
     esac;
 done;
 
-declare PROJECTS=$(get_projects);
+declare PROJECTS=$(get_projects "$PROJECT_ID");
 
 if [[ $PROJECTS == "[]" ]]; then
     echo "No projects found";
@@ -107,16 +142,24 @@ fi;
 
 for PROJECT_ID in $PROJECTS; do
 
-    set_project $PROJECT_ID;
+	set_project $PROJECT_ID;
 
-    if ! api_enabled compute.googleapis.com; then
-        if [[ $CSV != "True" ]]; then
-            echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
-        fi;
-        continue;
-    fi;
+	if ! api_enabled compute.googleapis.com; then
+		if [[ $CSV != "True" ]]; then
+		    echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+		fi;
+		continue;
+	fi;
 
-    listCloudArmorPolicies;
+	if [[ "$(hasHTTPLoadBalancer)" == "0" ]]; then
+		if [[ $CSV != "True" ]]; then
+		    echo "No HTTP Load Balancers found for project $PROJECT_ID";
+		    echo "";
+		fi;
+		continue;
+	fi;
+
+	listCloudArmorPolicies;
 done;
 
 
