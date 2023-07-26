@@ -2,81 +2,123 @@
 
 source functions.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
+declare SEPARATOR="---------------------------------------------------------------------------------"
+declare PROJECT_IDS=""
+declare DEBUG="False"
+declare CSV="False"
+declare HELP=$(cat << EOL
+	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]
 EOL
-);
+)
 
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
+    "--help")        set -- "$@" "-h" ;;
+    "--debug")       set -- "$@" "-d" ;;
+    "--csv")         set -- "$@" "-c" ;;
+    "--project")     set -- "$@" "-p" ;;
+    *)               set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdp:" option
-do 
+while getopts "hdcip:" option
+do
     case "${option}"
         in
         p)
-        	PROJECT_IDS=${OPTARG};;
+            PROJECT_IDS=${OPTARG};;
         d)
-        	DEBUG="True";;
+            DEBUG="True";;
+        c)
+            CSV="True";;
         h)
-        	echo $HELP; 
-        	exit 0;;
-    esac;
-done;
+            echo "$HELP"
+            exit 0;;
+    esac
+done
+
 
 if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(get_projects);
-fi;
+    declare PROJECT_IDS=$(get_projects)
+fi
+
+if [[ $DEBUG == "True" ]]; then
+    echo "Projects: $PROJECT_IDS"
+    echo ""
+fi
+
+if [[ $CSV == "True" ]]; then
+    echo "\"PROJECT_ID\",\"PROJECT_NAME\",\"PROJECT_OWNER\",\"PROJECT_APPLICATION\",\"INSTANCE_NAME\",\"IP_FORWARDING_ENABLED\",\"IP_FORWARDING_STATUS_MESSAGE\""
+fi
 
 for PROJECT_ID in $PROJECT_IDS; do
-    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-    	
-	set_project $PROJECT_ID;
+    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json")
+    PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name')
+    PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app')
+    PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid')
 
-	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+    set_project $PROJECT_ID
 
-	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
+    if ! api_enabled compute.googleapis.com; then
+        if [[ $CSV != "True" ]]; then
+            echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+            echo ""
+        else
+            echo "\"Compute Engine API is not enabled on Project $PROJECT_ID\""
+        fi
+        continue
+    fi
 
-	if [[ $INSTANCES != "[]" ]]; then
-	
-		echo "---------------------------------------------------------------------------------";
-		echo "Instances for Project $PROJECT_ID";
-        echo "Project Application: $PROJECT_APPLICATION";
-	    echo "Project Owner: $PROJECT_OWNER";
-		echo "---------------------------------------------------------------------------------";
+    declare INSTANCES=$(gcloud compute instances list --quiet --format="json")
 
-		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
+    if [[ $DEBUG == "True" ]]; then
+        echo "Instances (JSON): $INSTANCES"
+        echo ""
+    fi
 
-			NAME=$(echo $INSTANCE | jq -rc '.name');
-			IP_FORWARDING_ENABLED=$(echo $INSTANCE | jq -rc '.canIpForward' | tr '[:upper:]' '[:lower:]');
-			IS_GKE_NODE=$(echo $INSTANCE | jq '.labels' | jq 'has("goog-gke-node")');
-			
-			if [[ $IP_FORWARDING_ENABLED == "true"  && $IS_GKE_NODE == "false" ]]; then
-				echo "Instance Name: $NAME";
-				echo "IP Forwarding Configuration: $IP_FORWARDING_ENABLED";
-				echo "VIOLATION: IP forwarding enabled"
-				echo "";
-			fi;
-		done;
-		echo "";
-	else
-		echo "No instances found for Project $PROJECT_ID";
-		echo "";
-	fi;
-	sleep 0.5;
-done;
+    if [[ $INSTANCES != "[]" ]]; then
+        echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE; do
+            if [[ $DEBUG == "True" ]]; then
+                echo "Instance (JSON): $INSTANCE"
+                echo ""
+            fi
+
+            INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name')
+            IP_FORWARDING_ENABLED=$(echo $INSTANCE | jq -rc '.canIpForward' | tr '[:upper:]' '[:lower:]')
+
+            if [[ $IP_FORWARDING_ENABLED == "true" ]]; then
+                IP_FORWARDING_STATUS_MESSAGE="VIOLATION: IP forwarding enabled"
+
+	    elif [[ -z $IP_FORWARDING_ENABLED || $IP_FORWARDING_ENABLED == "null" ]]; then
+		    IP_FORWARDING_ENABLED="IP Forwarding is NOT explicitly configured"
+		    IP_FORWARDING_STATUS_MESSAGE="N/A"
+            else
+                IP_FORWARDING_STATUS_MESSAGE="IP forwarding disabled"
+            fi
+
+            # Print the results gathered above
+            if [[ $CSV != "True" ]]; then
+                echo "Project ID: $PROJECT_ID"
+                echo "Project Name: $PROJECT_NAME"
+                echo "Project Application: $PROJECT_APPLICATION"
+                echo "Project Owner: $PROJECT_OWNER"
+                echo "Instance Name: $INSTANCE_NAME"
+                echo "IP Forwarding Enabled: $IP_FORWARDING_ENABLED"
+                echo "IP Forwarding Status: $IP_FORWARDING_STATUS_MESSAGE"
+                echo ""
+            else
+                echo "\"$PROJECT_ID\",\"$PROJECT_NAME\",\"$PROJECT_OWNER\",\"$PROJECT_APPLICATION\",\"$INSTANCE_NAME\",\"$IP_FORWARDING_ENABLED\",\"$IP_FORWARDING_STATUS_MESSAGE\""
+            fi
+        done
+        echo ""
+    else
+        if [[ $CSV != "True" ]]; then
+            echo "No instances found for Project $PROJECT_ID"
+            echo ""
+        fi
+    fi
+    sleep 0.5
+done
+
 
