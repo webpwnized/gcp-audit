@@ -30,3 +30,14 @@ function set_project() {
     local PROJECT_ID=$1;
     gcloud config set project $PROJECT_ID 2>/dev/null;
 }
+
+
+# Function to get project details project_name, project_application, project_owner
+get_project_details() {
+  local project_id=$1
+
+  PROJECT_DETAILS=$(gcloud projects describe $project_id --format="json")
+  PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name')
+  PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app')
+  PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid')
+}
