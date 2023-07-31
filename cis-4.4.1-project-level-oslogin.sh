@@ -71,10 +71,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $PROJECT_INFO != "" ]]; then
 
-		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
-		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+      		#Get project details
+      		get_project_details $PROJECT_ID
 
 		# Checking the project level confirguration
 		OSLOGIN_ENABLED_PROJECT=$(echo $PROJECT_INFO | jq -rc '.commonInstanceMetadata.items[] | with_entries( .value |= ascii_downcase ) | select(.key=="enable-oslogin") | select(.value=="true") // empty' );

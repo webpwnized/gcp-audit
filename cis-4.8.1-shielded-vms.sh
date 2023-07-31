@@ -38,9 +38,6 @@ if [[ $PROJECT_IDS == "" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-    PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-	PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-	PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
 
 	set_project $PROJECT_ID;
 
@@ -48,6 +45,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
 		continue
 	fi
+
+	#Get project details
+      	get_project_details $PROJECT_ID
 
 	declare INSTANCES=$(gcloud compute instances list --quiet --format="json");
 
