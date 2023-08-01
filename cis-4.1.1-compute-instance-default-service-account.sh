@@ -72,10 +72,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $INSTANCES != "[]" ]]; then
 
-		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
-		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+      		#Get project details
+      		get_project_details $PROJECT_ID
 
 		echo $INSTANCES | jq -rc '.[]' | while IFS='' read -r INSTANCE;do
 		

@@ -27,7 +27,7 @@ do
     case "${option}"
         in
         p)
-        	PROJECT_ID=${OPTARG};;
+        	PROJECT_IDS=${OPTARG};;
         d)
         	DEBUG="True";;
         c)
@@ -38,10 +38,8 @@ do
     esac;
 done;
 
-if [[ $PROJECT_ID == "" ]]; then
-    declare PROJECTS=$(gcloud projects list --format="json");
-else
-    declare PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID");
+if [[ $PROJECT_IDS == "" ]]; then
+    declare PROJECT_IDS=$(get_projects);
 fi;
 
 if [[ $PROJECTS != "[]" ]]; then
@@ -50,11 +48,9 @@ if [[ $PROJECTS != "[]" ]]; then
 	    echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"IP_ADDRESS\", \"ADDRESS_TYPE\", \"KIND\", \"ADDRESS_NAME\", \"PURPOSE\", \"DESCRIPTION\", \"STATUS\", \"VERSION\", \"DIRTY\", \"EXTERNAL_IP_STATUS_MESSAGE\"";
     fi;
 
-    echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
-
-	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
-		
+    for PROJECT_ID in $PROJECT_IDS; do
 	set_project $PROJECT_ID;
+		
 	
 	if ! api_enabled compute.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
@@ -67,11 +63,9 @@ if [[ $PROJECTS != "[]" ]]; then
 
 	if [[ $ADDRESSES != "[]" ]]; then
 
-		PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-		PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
-		PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-		PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
-
+		#Get project details
+      		get_project_details $PROJECT_ID
+		
 		if [[ $CSV != "True" ]]; then
 			echo "---------------------------------------------------------------------------------";
 			echo "External IP Addresses for Project $PROJECT_ID";
