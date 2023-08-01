@@ -48,77 +48,76 @@ if [[ $CSV == "True" ]]; then
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do
-set_project $PROJECT_ID;
-if ! api_enabled compute.googleapis.com; then
-    echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-    continue
-fi
+	set_project $PROJECT_ID;
+
+	if ! api_enabled compute.googleapis.com; then
+		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+		continue
+	fi
 
 
-PROJECT_DETAILS=$(gcloud projects describe $PROJECT_ID --format="json");
-PROJECT_NAME=$(echo $PROJECT_DETAILS | jq -rc '.name');
-PROJECT_APPLICATION=$(echo $PROJECT_DETAILS | jq -rc '.labels.app');
-PROJECT_OWNER=$(echo $PROJECT_DETAILS | jq -rc '.labels.adid');
+	#Get project details
+    	get_project_details $PROJECT_ID
 
-declare RESULTS=$(gcloud compute routers list --project $PROJECT_ID --format="json");
+	declare RESULTS=$(gcloud compute routers list --project $PROJECT_ID --format="json");
 
-if [[ $RESULTS != "[]" ]]; then
-	if [[ $CSV != "True" ]]; then
-		echo $SEPARATOR;
-		echo "Cloud NAT services for project $PROJECT_ID";
-		echo "";
+	if [[ $RESULTS != "[]" ]]; then
+		if [[ $CSV != "True" ]]; then
+			echo $SEPARATOR;
+			echo "Cloud NAT services for project $PROJECT_ID";
+			echo "";
+		fi;
+
+		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r ROUTER;do
+			ROUTER_NAME=$(echo $ROUTER | jq -rc '.name');
+			ROUTER_REGION=$(echo $ROUTER | jq -rc '.region');
+
+			# Debugging output for router
+			if [[ $DEBUG == "True" ]]; then
+			echo "Router details:"
+				echo $ROUTER | jq '.';
+			fi;
+
+			NATS=$(gcloud compute routers nats list --router=$ROUTER_NAME --router-region=$ROUTER_REGION --project=$PROJECT_ID --format="json");
+			echo $NATS | jq -r -c '.[]' | while IFS='' read -r NAT; do
+				NAT_NAME=$(echo $NAT | jq -rc '.name');
+				LOG_CONFIG=$(echo $NAT | jq -rc '.logConfig.enable // false');
+
+				# Debugging output for Cloud NAT
+				if [[ $DEBUG == "True" ]]; then
+					echo "Cloud NAT details:"
+					echo $NAT | jq '.';
+				fi;
+
+
+				if [[ $LOG_CONFIG == "false" ]]; then
+					LOG_CONFIG_STATUS_MESSAGE="VIOLATION:Cloud NAT logging is not enabled";
+				else
+					LOG_CONFIG_STATUS_MESSAGE="Cloud NAT logging is enabled";
+				fi;
+
+				if [[ $CSV != "True" ]]; then
+					echo "Cloud NAT Name: $NAT_NAME";
+					echo "Cloud NAT Router: $ROUTER_NAME";
+					echo "Project Name: $PROJECT_NAME";
+					echo "Project Application: $PROJECT_APPLICATION";
+					echo "Project Owner: $PROJECT_OWNER";
+					echo "Logging Enabled: $LOG_CONFIG";
+					echo "Logging Status: $LOG_CONFIG_STATUS_MESSAGE";
+					echo "";
+				else
+			echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\",\"$PROJECT_OWNER\", \"$NAT_NAME\", \"$ROUTER_NAME\", \"$LOG_CONFIG\", \"$LOG_CONFIG_STATUS_MESSAGE\"";
+				fi;
+			done;
+		done;
+	else
+		if [[ $CSV != "True" ]]; then
+			echo $SEPARATOR;
+			echo "No Cloud NAT services for project $PROJECT_ID";
+			echo "";
+		fi;
 	fi;
-
-    echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r ROUTER;do
-        ROUTER_NAME=$(echo $ROUTER | jq -rc '.name');
-        ROUTER_REGION=$(echo $ROUTER | jq -rc '.region');
-
-	    # Debugging output for router
-	    if [[ $DEBUG == "True" ]]; then
- 	       echo "Router details:"
-	        echo $ROUTER | jq '.';
- 	    fi;
-
-        NATS=$(gcloud compute routers nats list --router=$ROUTER_NAME --router-region=$ROUTER_REGION --project=$PROJECT_ID --format="json");
-        echo $NATS | jq -r -c '.[]' | while IFS='' read -r NAT; do
-            NAT_NAME=$(echo $NAT | jq -rc '.name');
-            LOG_CONFIG=$(echo $NAT | jq -rc '.logConfig.enable // false');
-
-	        # Debugging output for Cloud NAT
-	        if [[ $DEBUG == "True" ]]; then
-	            echo "Cloud NAT details:"
-	            echo $NAT | jq '.';
-	        fi;
-
-
-            if [[ $LOG_CONFIG == "false" ]]; then
-                LOG_CONFIG_STATUS_MESSAGE="VIOLATION:Cloud NAT logging is not enabled";
-            else
-                LOG_CONFIG_STATUS_MESSAGE="Cloud NAT logging is enabled";
-            fi;
-
-            if [[ $CSV != "True" ]]; then
-                echo "Cloud NAT Name: $NAT_NAME";
-                echo "Cloud NAT Router: $ROUTER_NAME";
-                echo "Project Name: $PROJECT_NAME";
-                echo "Project Application: $PROJECT_APPLICATION";
-                echo "Project Owner: $PROJECT_OWNER";
-                echo "Logging Enabled: $LOG_CONFIG";
-                echo "Logging Status: $LOG_CONFIG_STATUS_MESSAGE";
-                echo "";
-            else
-		echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\",\"$PROJECT_OWNER\", \"$NAT_NAME\", \"$ROUTER_NAME\", \"$LOG_CONFIG\", \"$LOG_CONFIG_STATUS_MESSAGE\"";
-            fi;
-        done;
-    done;
-else
-    if [[ $CSV != "True" ]]; then
-        echo $SEPARATOR;
-        echo "No Cloud NAT services for project $PROJECT_ID";
-        echo "";
-    fi;
-fi;
-sleep 0.5;
+	sleep 0.5;
 done;
 
 
