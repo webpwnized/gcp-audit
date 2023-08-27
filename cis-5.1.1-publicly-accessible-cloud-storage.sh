@@ -2,11 +2,9 @@
 
 source functions.inc
 
-declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
 declare DEBUG="False";
 declare CSV="False";
-declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
@@ -23,7 +21,7 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "hdcip:" option
+while getopts "hdcp:" option
 do 
     case "${option}"
         in
@@ -57,7 +55,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "";
 		fi;
 		continue;
-	fi
+	fi;
 
 	declare BUCKET_NAMES=$(gsutil ls);
 	
@@ -71,24 +69,12 @@ for PROJECT_ID in $PROJECT_IDS; do
       		#Get project details
       		get_project_details $PROJECT_ID
 
-		if [[ $CSV != "True" ]]; then
-			echo $SEPARATOR;
-			echo "Storage Buckets for Project $PROJECT_ID";
-			echo $SEPARATOR;
-		fi;
-		
 		for BUCKET_NAME in $BUCKET_NAMES; do
 
 			declare PERMISSIONS=$(gsutil iam get $BUCKET_NAME);
 
 			if [[ $DEBUG == "True" ]]; then
 				echo "Permissions (JSON): $PERMISSIONS";
-			fi;
-
-			if [[ $CSV != "True" ]]; then
-				echo $SEPARATOR;
-				echo "IAM Permissions for Bucket $BUCKET_NAME";
-				echo $SEPARATOR;
 			fi;
 
 			echo $PERMISSIONS | jq -r -c '.bindings[]' | while IFS='' read -r PERMISSION;do
