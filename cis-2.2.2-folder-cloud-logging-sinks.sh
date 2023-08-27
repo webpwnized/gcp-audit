@@ -6,7 +6,6 @@ declare ORGANIZATION_IDS="";
 declare FOLDER_ID="";
 declare DEBUG="False";
 declare CSV="False";
-declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-o, --organization ORGANIZATION] [-f, --folder FOLDER] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
@@ -24,7 +23,7 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "hdcio:f:" option
+while getopts "hdco:f:" option
 do 
     case "${option}"
         in

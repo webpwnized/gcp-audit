@@ -2,10 +2,9 @@
 
 source functions.inc
 
-declare PROJECT_IDS=""
-declare DEBUG="False"
-declare CSV="False"
-declare ICH="False"
+declare PROJECT_IDS="";
+declare DEBUG="False";
+declare CSV="False";
 
 declare HELP=$(cat << EOL
 	$0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]	
@@ -23,7 +22,7 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "hdcip:r:" option
+while getopts "hdcp:r:" option
 do 
     case "${option}"
         in

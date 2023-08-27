@@ -5,7 +5,6 @@ source functions.inc
 declare ORGANIZATION_IDS="";
 declare DEBUG="False";
 declare CSV="False";
-declare ICH="False";
 declare HELP=$(cat << EOL
 	$0 [-o, --organization ORGANIZATION] [-c, --csv] [-d, --debug] [-h, --help]	
 EOL
@@ -22,7 +21,7 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "hdcio:" option
+while getopts "hdco:" option
 do 
     case "${option}"
         in
