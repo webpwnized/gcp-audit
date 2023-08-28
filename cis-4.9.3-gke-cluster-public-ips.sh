@@ -13,11 +13,11 @@ function output_header() {
 };
 
 function output_csv_header() {
-	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"CLUSTER_NAME\", \"CLUSTER_STATUS\", \"CLUSTER_NETWORK\", \"CLUSTER_SUBNETWORK\", \"CLUSTER_SHIELDED_NODE_ENABLED\", \"CLUSTER_AUTHORIZED_NETWORKS\", \"CLUSTER_PUBLIC_ENDPOINT\", \"CLUSTER_PUBLIC_ENDPOINT_FLAG\"";
+	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"CLUSTER_NAME\", \"CLUSTER_STATUS\", \"CLUSTER_NETWORK\", \"CLUSTER_SUBNETWORK\", \"CLUSTER_AUTHORIZED_NETWORKS\", \"CLUSTER_PUBLIC_ENDPOINT\", \"CLUSTER_PUBLIC_ENDPOINT_FLAG\"";
 };
 
 function output_gke_cluster_csv() {
-	echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$CLUSTER_NAME\", \"$CLUSTER_STATUS\", \"$CLUSTER_NETWORK\", \"$CLUSTER_SUBNETWORK\", \"$CLUSTER_SHIELDED_NODE_ENABLED\", \"$CLUSTER_AUTHORIZED_NETWORKS\", \"$CLUSTER_PUBLIC_ENDPOINT\", \"$CLUSTER_PUBLIC_ENDPOINT_FLAG\"";
+	echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$CLUSTER_NAME\", \"$CLUSTER_STATUS\", \"$CLUSTER_NETWORK\", \"$CLUSTER_SUBNETWORK\", \"$CLUSTER_AUTHORIZED_NETWORKS\", \"$CLUSTER_PUBLIC_ENDPOINT\", \"$CLUSTER_PUBLIC_ENDPOINT_FLAG\"";
 };
 
 function output_gke_cluster() {
@@ -36,7 +36,6 @@ function output_gke_cluster_text() {
 	echo "Cluster Status: $CLUSTER_STATUS";
 	echo "Cluster Network: $CLUSTER_NETWORK";
 	echo "Cluster Subnetwork: $CLUSTER_SUBNETWORK";
-	echo "Cluster Shielded Node Status: $CLUSTER_SHIELDED_NODE_ENABLED";
 	echo "Cluster Autorized Networks: $CLUSTER_AUTHORIZED_NETWORKS";
 	echo "Cluster Control Plane External IP Address: $CLUSTER_PUBLIC_ENDPOINT";
 	echo $BLANK_LINE;
@@ -49,9 +48,8 @@ function parse_gke_cluster() {
 	CLUSTER_STATUS=$(echo $l_CLUSTER | jq -rc '.status');
 	CLUSTER_SUBNETWORK=$(echo $l_CLUSTER | jq -rc '.subnetwork');
 	CLUSTER_NETWORK=$(echo $l_CLUSTER | jq -rc '.network');
-	CLUSTER_SHIELDED_NODE_ENABLED=$(echo $l_CLUSTER | jq -rc '.shieldedNodes.enabled // empty');
 	CLUSTER_PUBLIC_ENDPOINT=$(echo $l_CLUSTER | jq -rc '.privateClusterConfig.publicEndpoint // empty');
-	CLUSTER_AUTHORIZED_NETWORKS=$(echo $l_CLUSTER | jq -rc '.masterAuthorizedNetworksConfig.cidrBlocks | map(.cidrBlock) | join(",")');
+	CLUSTER_AUTHORIZED_NETWORKS=$(echo $l_CLUSTER | jq -rc 'if (.masterAuthorizedNetworksConfig.cidrBlocks | length) > 0 then .masterAuthorizedNetworksConfig.cidrBlocks | map(.cidrBlock) | join(" ") else empty end');
 	
 	CLUSTER_PUBLIC_ENDPOINT_FLAG="False";
 	if [[ $CLUSTER_PUBLIC_ENDPOINT != "" ]]; then
