@@ -115,6 +115,8 @@ if [[ $PROJECTS != "[]" ]]; then
 				echo $BLANK_LINE;
 			fi;
 		fi;
+		
+		sleep 0.25;
 	done;
 else
 	if [[ $CSV == "False" ]]; then
