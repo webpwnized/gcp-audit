@@ -44,28 +44,42 @@ if [[ $RESULTS != "[]" ]]; then
         if [[ $OWNER_ONLY == "True" ]]; then
             echo "\"PROJECT_OWNER\"";
         else
-            echo "\"PROJECT_NAME\",\"PROJECT_APPLICATION\",\"PROJECT_OWNER\"";
-        fi
-    fi
+            echo "\"PROJECT_NAME\",\"PROJECT_APPLICATION_ENTRY_CODE\",\"PROJECT_OWNER\",\"PROJECT_ACC\", \"PROJECT_DEPARTMENT_CODE\", \"PROJECT_PAR\"";
+        fi;
+    fi;
         
     echo $RESULTS | jq -rc '.[]' | while IFS='' read PROJECT; do
         PROJECT_NAME=$(echo $PROJECT | jq -rc '.name');
-        PROJECT_APPLICATION=$(echo $PROJECT | jq -rc '.labels.app');
+        PROJECT_APPLICATION_ENTRY_CODE=$(echo $PROJECT | jq -rc '.labels.app');
         PROJECT_OWNER=$(echo $PROJECT | jq -rc '.labels.adid');
+        PROJECT_ACC=$(echo $PROJECT | jq -rc '.labels.acc');
+        PROJECT_DEPARTMENT_CODE=$(echo $PROJECT | jq -rc '.labels.dept');
+        PROJECT_PAR=$(echo $PROJECT | jq -rc '.labels.par');
+
+        if [[ $DEBUG == "True" ]]; then
+            echo -n "Lables (JSON): ";
+            echo $PROJECT | jq -rc '.labels'; 
+        fi;
 
         if [[ $CSV == "True" ]]; then
             if [[ $OWNER_ONLY == "True" ]]; then
                 echo "\"$PROJECT_OWNER\"";
             else
-                echo "\"$PROJECT_NAME\",\"$PROJECT_APPLICATION\",\"$PROJECT_OWNER\"";
-            fi
+                echo "\"$PROJECT_NAME\",\"$PROJECT_APPLICATION_ENTRY_CODE\",\"$PROJECT_OWNER\",\"$PROJECT_ACC\", \"$PROJECT_DEPARTMENT_CODE\", \"$PROJECT_PAR\"";
+            fi;
         else
             if [[ $OWNER_ONLY == "True" ]]; then
                 echo "$PROJECT_OWNER";
             else
-                echo "$PROJECT_NAME ($PROJECT_APPLICATION): $PROJECT_OWNER";
-            fi
-        fi
+                echo "Project Name: $PROJECT_NAME";
+                echo "Project Owner: $PROJECT_OWNER";
+                echo "Project Application Entry Code: $PROJECT_APPLICATION_ENTRY_CODE";
+                echo "Project ACC: $PROJECT_ACC";
+                echo "Project Department Code: $PROJECT_DEPARTMENT_CODE";
+                echo "Project PAR: $PROJECT_PAR";
+                echo "";
+            fi;
+        fi;
     done
 else
     echo "No projects found";
