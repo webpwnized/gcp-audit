@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -65,7 +66,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		if [[ $CSV != "True" ]]; then
 			echo $SEPARATOR;
 			echo "Cloud NAT services for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 
 		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r ROUTER;do
@@ -104,7 +105,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 					echo "Project Owner: $PROJECT_OWNER";
 					echo "Logging Enabled: $LOG_CONFIG";
 					echo "Logging Status: $LOG_CONFIG_STATUS_MESSAGE";
-					echo "";
+					echo $BLANK_LINE;
 				else
 			echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\",\"$PROJECT_OWNER\", \"$NAT_NAME\", \"$ROUTER_NAME\", \"$LOG_CONFIG\", \"$LOG_CONFIG_STATUS_MESSAGE\"";
 				fi;
@@ -114,10 +115,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 		if [[ $CSV != "True" ]]; then
 			echo $SEPARATOR;
 			echo "No Cloud NAT services for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 
 

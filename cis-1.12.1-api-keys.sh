@@ -1,3 +1,5 @@
 #!/bin/bash
 
-gcloud services api-keys list
+source common-constants.inc;
+
+gcloud services api-keys list;

@@ -4,6 +4,6 @@ ORGANIZATION_IDS=$(gcloud organizations list --format="flattened(ID)" | grep id 
 
 for ORGANIZATION_ID in $ORGANIZATION_IDS; do
 	gcloud resource-manager folders list --organization $ORGANIZATION_ID
-	echo "";
-	sleep 0.5;
+	echo $BLANK_LINE;
+	sleep $SLEEP_SECONDS;
 done;

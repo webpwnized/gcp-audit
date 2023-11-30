@@ -109,7 +109,7 @@ if [[ $PROJECTS != "[]" ]]; then
 			fi;
 		fi;
 		
-		sleep 0.25;
+		sleep $SLEEP_SECONDS;
 	done;
 else
 	if [[ $CSV == "False" ]]; then

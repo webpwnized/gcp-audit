@@ -4,7 +4,8 @@ declare ORGANIZATION_IDS=$(gcloud organizations list --format="flattened(ID)" | 
 
 for ORGANIZATION_ID in $ORGANIZATION_IDS; do
 	echo "Organization Admins for $ORGANIZATION_IDS"
-	echo ""
+	echo $BLANK_LINE;
 	gcloud organizations get-iam-policy $ORGANIZATION_ID | grep -B 1 'roles/resourcemanager.organizationAdmin' | grep 'user' | cut -d : -f2;
-	echo ""
+	echo $BLANK_LINE;
+	sleep $SLEEP_SECONDS;
 done;

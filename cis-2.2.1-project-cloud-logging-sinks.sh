@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -54,7 +55,7 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 
 if [[ $CSV == "True" ]]; then
@@ -76,7 +77,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $DEBUG == "True" ]]; then
 		echo "Sinks (JSON): $SINKS";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 	
 	if [[ $CSV != "True" ]]; then
@@ -125,7 +126,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Log Sink Destination: $SINK_DESTINATION";
 				echo "Log Sink Filter Message: $SINK_FILTER_MESSAGE";
 				echo "Log Sink Filter: $SINK_FILTER";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$SINK_NAME\", \"$SINK_DESTINATION\", \"$SINK_FILTER_IS_DEFAULT_DEFAULT\", \"$SINK_FILTER_IS_REQUIRED_DEFAULT\", \"$SINK_FILTER_MESSAGE\", \"$SINK_FILTER\"";
 			fi;		
@@ -135,9 +136,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No log sinks found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

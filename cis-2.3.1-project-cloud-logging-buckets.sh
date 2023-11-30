@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -85,7 +86,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Project Application: $PROJECT_APPLICATION";
 				echo "Project Owner: $PROJECT_OWNER";			
 				echo "Log Bucket (JSON): $BUCKET";
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 
 			BUCKET_NAME=$(echo $BUCKET | jq -rc '.name');
@@ -112,7 +113,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Log Bucket Retention Days: $BUCKET_RETENTION_DAYS";
 				echo "Log Bucket Description: $BUCKET_DESCRIPTION";
 				echo "Log Bucket Retention Information: $BUCKET_RETENTION_WARNING";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$BUCKET_NAME_SHORT\", \"$BUCKET_NAME_LOCATION\", \"$BUCKET_LIFECYCLE_STATE\", \"$BUCKET_RETENTION_DAYS\", \"$BUCKET_DESCRIPTION\", \"$BUCKET_RETENTION_WARNING\"";
 			fi;		
@@ -122,9 +123,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No log buckets found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

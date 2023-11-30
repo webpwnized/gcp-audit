@@ -72,7 +72,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo $SEPARATOR;
 		echo "GKE Clusters for Project $PROJECT_ID";
 		echo $SEPARATOR;
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 	
 	if [[ $CLUSTERS != "[]" ]]; then
@@ -101,7 +101,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "GKE Cluster Binary Authorization Status: $BINARY_AUTHORIZATION_MODE";
 				echo "GKE Cluster Database Encryption Mode: $DATABASE_ENCRYPTION_MODE";
 				echo "GKE Cluster Private Cluster Mode: $PRIVATE_CLUSTER_MODE";				
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$CLUSTER_NAME\", \"$CLUSTER_NODE_VERSION\", \"$BINARY_AUTHORIZATION_MODE\", \"$DATABASE_ENCRYPTION_MODE\", \"$PRIVATE_CLUSTER_MODE\"";
 			fi;		
@@ -110,9 +110,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No GKE Clusters found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

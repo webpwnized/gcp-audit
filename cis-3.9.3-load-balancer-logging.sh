@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 # Print output for each load balancer and its backend service
 function printOutput() {
@@ -13,7 +14,7 @@ function printOutput() {
         echo "Backend Service Name: $BACKEND_SERVICE_NAME";
         echo "Logging Status: $IS_LOGGING_ENABLED";
         echo "Logging Status Message: $IS_LOGGING_ENABLED_MESSAGE";
-        echo "";
+        echo $BLANK_LINE;
     else 
         echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$LOAD_BALANCER_NAME\", \"$BACKEND_SERVICE_NAME\", \"$IS_LOGGING_ENABLED\", \"$IS_LOGGING_ENABLED_MESSAGE\"";
     fi;
@@ -79,7 +80,7 @@ check_load_balancer_found() {
   if [ "$(echo "$lb_list_var" | jq -rc 'length')" -eq "0" ]; then
     if [[ $CSV != "True" ]]; then
       echo "No $load_balancer_type load balancer found for Project $PROJECT_ID";
-      echo "";
+      echo $BLANK_LINE;
     fi
     return 1
   fi
@@ -119,7 +120,7 @@ function printDebugOutput() {
     BACKEND_SERVICE_JSON=$(describe_backend_services $BACKEND_SERVICE_NAME)
     echo $BACKEND_SERVICE_JSON | jq
     echo "End of Backend Service Details for $BACKEND_SERVICE_NAME"
-    echo ""
+    echo $BLANK_LINE;
 };
 
 # Function to describe url maps (load balancers)
@@ -321,12 +322,13 @@ if [[ $PROJECTS != "[]" ]]; then
 
           done
       fi;
-      printSeparator
+      printSeparator;
 
-  done
+      sleep $SLEEP_SECONDS;
+  done;
 else # if no projects
   if [[ $CSV != "True" ]]; then
     echo "No projects found"
-    echo ""
+    echo $BLANK_LINE;
   fi
 fi

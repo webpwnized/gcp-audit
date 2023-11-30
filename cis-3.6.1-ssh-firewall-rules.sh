@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -57,7 +58,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 		echo $SEPARATOR;
 		echo "Firewall rules for project $PROJECT_ID";
-		echo "";
+		echo $BLANK_LINE;
 		
 		#Loop through each firewall rule in the project
 		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r FIREWALL_RULE;do
@@ -152,14 +153,14 @@ for PROJECT_ID in $PROJECT_IDS; do
 						fi;
 					done;
 				fi;
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 		done;
 	else
 		echo $SEPARATOR;
 		echo "No firewall rules found for $PROJECT_ID";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

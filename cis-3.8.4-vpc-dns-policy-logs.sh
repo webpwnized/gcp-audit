@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -61,7 +62,7 @@ for PROJECT_ID in $PROJECT_IDS; do
     if [[ $CSV != "True" ]]; then
         echo "---------------------------------------------------------------------------------"
         echo "VPCs for Project $PROJECT_ID"
-        echo ""
+        echo $BLANK_LINE;
     fi
 
     if [[ $VPCS != "[]" ]]; then
@@ -102,7 +103,7 @@ for PROJECT_ID in $PROJECT_IDS; do
                             echo "DNS Policy Enabled: $DNS_POLICY_ENABLED"
                             echo "DNS Policy Logging Enabled: $DNS_POLICY_LOGGING_ENABLED"
                             echo "Status: $STATUS_MESSAGE"
-                            echo ""
+                            echo $BLANK_LINE;
                         else
                             echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$VPC_NAME\", \"$DNS_POLICY_NAME\", \"$DNS_POLICY_ENABLED\", \"$DNS_POLICY_LOGGING_ENABLED\", \"$STATUS_MESSAGE\""
                         fi
@@ -128,7 +129,7 @@ for PROJECT_ID in $PROJECT_IDS; do
                     echo "DNS Policy Enabled: $DNS_POLICY_ENABLED"
                     echo "DNS Policy Logging Enabled: $DNS_POLICY_LOGGING_ENABLED"
                     echo "Status: $STATUS_MESSAGE"
-                    echo ""
+                    echo $BLANK_LINE;
                 else
                     echo "\"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$VPC_NAME\", \"$DNS_POLICY_NAME\", \"$DNS_POLICY_ENABLED\", \"$DNS_POLICY_LOGGING_ENABLED\", \"$STATUS_MESSAGE\""
                 fi
@@ -137,10 +138,10 @@ for PROJECT_ID in $PROJECT_IDS; do
     else
         if [[ $CSV != "True" ]]; then
             echo "No VPCs found for project $PROJECT_ID"
-            echo ""
+            echo $BLANK_LINE;
         fi
     fi
-    sleep 0.5
+    sleep $SLEEP_SECONDS;
 done
 
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -52,7 +53,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if ! api_enabled sqladmin.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
 			echo "Cloud SQL API is not enabled on Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 		continue;
 	fi;	
@@ -61,7 +62,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Cloud SQL Instances (json): $INSTANCES";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 	
 	if [[ $INSTANCES != "[]" ]]; then
@@ -71,7 +72,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		
 			if [[ $DEBUG == "True" ]]; then
 				echo "Cloud SQL Instance (json): $INSTANCE";
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 
 			DATABASE_NAME=$(echo $INSTANCE | jq -rc '.name');	
@@ -95,7 +96,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Cloud SQL Instance $DATABASE_NAME";
 				echo "Version: $DATABASE_VERSION";
 				echo "External IP Addresses: $EXTERNAL_IP";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$DATABASE_NAME\", \"$DATABASE_VERSION\", \"$EXTERNAL_IP\", \"$EXTERNAL_IP_EXISTS_FLAG\"";
 			fi;
@@ -105,10 +106,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "Project $PROJECT_ID: No Cloud SQL found. Disable the Cloud SQL API until needed.";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
 		
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

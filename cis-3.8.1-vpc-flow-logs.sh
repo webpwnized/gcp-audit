@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -117,7 +118,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Flow Log Metadata Configuration: $FLOW_LOG_METADATA_CONFIGURATION";
 				echo $FLOW_LOG_STATUS_MESSAGE;
 				echo $FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE;
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$SUBNET_NAME\", \"$IP_RANGE\", \"$FLOW_LOGS_ENABLED\", \"$FLOW_LOG_AGGREGATION_INTERVAL\", \"$FLOW_LOG_SAMPLE_RATE\", \"$FLOW_LOG_METADATA_CONFIGURATION\", \"$FLOW_LOGS_ENABLED\", \"$FLOW_LOG_STATUS_MESSAGE\", \"$FLOW_LOG_SAMPLE_RATE_STATUS_MESSAGE\"";
 			fi;		
@@ -127,9 +128,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No subnets found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

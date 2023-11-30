@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -79,14 +80,14 @@ for PROJECT_ID in $PROJECT_IDS; do
 				if [[ $ENABLE_VTPM == "false" ]]; then
 					echo "VIOLATION: Virtual TPM is not enabled";
 				fi;
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 		done;
-		echo "";
+		echo $BLANK_LINE;
 	else
 		echo "No instances found for Project $PROJECT_ID";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

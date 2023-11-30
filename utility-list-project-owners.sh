@@ -77,13 +77,14 @@ if [[ $RESULTS != "[]" ]]; then
                 echo "Project ACC: $PROJECT_ACC";
                 echo "Project Department Code: $PROJECT_DEPARTMENT_CODE";
                 echo "Project PAR: $PROJECT_PAR";
-                echo "";
+                echo $BLANK_LINE;
             fi;
         fi;
-    done
+        sleep $SLEEP_SECONDS;
+    done;
 else
     echo "No projects found";
-    echo "";
+    echo $BLANK_LINE;
 fi;
 
 

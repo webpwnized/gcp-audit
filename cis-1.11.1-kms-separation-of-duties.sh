@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -45,7 +46,8 @@ for PROJECT_ID in $PROJECT_IDS; do
 	echo "IAM Policy for Project $PROJECT_ID"
 	echo "Project Application: $PROJECT_APPLICATION";
 	echo "Project Owner: $PROJECT_OWNER";
-	echo ""
+	echo $BLANK_LINE;
 	gcloud projects get-iam-policy $PROJECT_ID --format=json | jq ".bindings[] | select (.role | contains(\"$ROLE\"))";
-	echo ""
+	echo $BLANK_LINE;
+  sleep $SLEEP_SECONDS;
 done;

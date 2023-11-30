@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -52,7 +53,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if ! api_enabled storage.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
 			echo "Storage API is not enabled on Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 		continue;
 	fi;
@@ -61,7 +62,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $DEBUG == "True" ]]; then
 		echo "Buckets: $BUCKET_NAMES";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $BUCKET_NAMES != "" ]]; then
@@ -104,19 +105,19 @@ for PROJECT_ID in $PROJECT_IDS; do
 					echo "Role: $ROLE";
 					echo "$ALL_USERS_MESSAGE";
 					echo "$ALL_AUTHENTICATED_USERS_MESSAGE";
-					echo "";
+					echo $BLANK_LINE;
 				else
 					echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$BUCKET_NAME\", \"$MEMBERS\", \"$ROLE\", \"$ALL_USERS_MESSAGE\", \"$ALL_AUTHENTICATED_USERS_MESSAGE\"";
 				fi;
 			done;
 		done;
-		echo "";
+		echo $BLANK_LINE;
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No storage buckets found for Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -72,7 +73,7 @@ fi;
 		if [[ $CSV != "True" ]]; then
 			echo $SEPARATOR;
 			echo "Firewall rules for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 		
 		#Loop through each firewall rule in the project
@@ -101,7 +102,7 @@ fi;
 				echo "Project Owner: $PROJECT_OWNER";
 				echo "Logging: $LOG_CONFIG";
 				echo "Logging Status: $LOG_CONFIG_STATUS_MESSAGE";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$FIREWALL_RULE_NAME\", \"$LOG_CONFIG\", \"$LOG_CONFIG_STATUS_MESSAGE\"";
 			fi;
@@ -110,11 +111,11 @@ fi;
 		if [[ $CSV != "True" ]]; then
 			echo $SEPARATOR;
 			echo "No firewall rules found for $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
-    done;
+	sleep $SLEEP_SECONDS;
+done;
 
 
 

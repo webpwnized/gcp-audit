@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -43,7 +44,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if ! api_enabled compute.googleapis.com; then
 		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
+		continue;
 	fi
 	
 	declare RESULTS=$(gcloud compute networks list --quiet --format="json" | tr [:upper:] [:lower:] | jq '.[]');
@@ -56,9 +57,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $NETWORK_NAME == "default" ]]; then
 		echo "VIOLATION: Default network $NETWORK_NAME detected for Project $PROJECT_ID";
-		echo "";
+		echo $BLANK_LINE;
 	elif [[ $SUBNET_MODE == "legacy" ]]; then
 		echo "VIOLATION: Legacy network $NETWORK_NAME detected for Project $PROJECT_ID";
-		echo "";
-	fi
+		echo $BLANK_LINE;
+	fi;
+	sleep $SLEEP_SECONDS;
 done;

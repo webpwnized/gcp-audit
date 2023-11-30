@@ -1,10 +1,10 @@
 #!/bin/bash
 
+source common-constants.inc;
+source functions.inc;
+
 # Reference: 
 # https://cloud.google.com/sdk/gcloud/reference/container/clusters/list
-
-source ./common-constants.inc;
-source ./functions.inc;
 
 function output_header() {
 	if [[ $CSV == "True" ]]; then
@@ -116,7 +116,7 @@ if [[ $PROJECTS != "[]" ]]; then
 			fi;
 		fi;
 		
-		sleep 0.25;
+		sleep $SLEEP_SECONDS;
 	done;
 else
 	if [[ $CSV == "False" ]]; then

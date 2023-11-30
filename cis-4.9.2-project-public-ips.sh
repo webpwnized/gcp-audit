@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare PROJECT_IDS="";
 declare DEBUG="False";
@@ -130,18 +131,18 @@ if [[ $PROJECTS != "[]" ]]; then
 				echo "Description: $DESCRIPTION";
 				echo "Version: $VERSION";
 				echo "$EXTERNAL_IP_STATUS_MESSAGE";
-				echo "";
+				echo $BLANK_LINE;
 			elif [[ $CSV == "True" && $DIRTY == "True" ]]; then
 				echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$IP_ADDRESS\", \"$ADDRESS_TYPE\", \"$KIND\", \"$ADDRESS_NAME\", \"$PURPOSE\", \"$DESCRIPTION\", \"$STATUS\", \"$VERSION\", \"$DIRTY\", \"$EXTERNAL_IP_STATUS_MESSAGE\"";
 			fi;
 		done;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
     done;
 else
 	if [[ $CSV != "True" ]]; then
     		echo "No projects found";
-    		echo "";
+    		echo $BLANK_LINE;
 	fi;
 fi;
 

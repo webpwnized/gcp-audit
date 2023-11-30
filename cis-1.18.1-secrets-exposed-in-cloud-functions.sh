@@ -1,6 +1,7 @@
 #!/bin/bash
 
- source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -59,7 +60,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "Cloud functions for project $PROJECT_ID";
 		echo "Project Application: $PROJECT_APPLICATION";
 		echo "Project Owner: $PROJECT_OWNER";
-		echo "";
+		echo $BLANK_LINE;
 		
 		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r CLOUD_FUNCTION;do
 		
@@ -72,13 +73,13 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "Build Environment Variables: $BUILD_ENIVRONMENT_VARIABLES";
 			echo "Environment Variables: $ENIVRONMENT_VARIABLES";
 			if [[ $INGRESS_SETTINGS =~ "ALLOW_ALL" ]]; then echo "VIOLATION: Cloud function allows all ingress"; fi;
-			echo "";
+			echo $BLANK_LINE;
 		done;
 	else
 		echo $SEPARATOR;
 		echo "No cloud functions found for $PROJECT_ID";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

@@ -74,7 +74,7 @@ processBackendServices() {
     for HOST in $FRONTEND_HOSTS; do
         echo "Frontend Load Balancer URL: $HOST"
     done
-    echo ""
+    echo $BLANK_LINE;
 
 
     # Check if backend services exist
@@ -133,7 +133,7 @@ check_load_balancer_found() {
   if [ "$(echo "$lb_list_var" | jq -rc 'length')" -eq "0" ]; then
     if [[ $CSV != "True" ]]; then
       echo "No $load_balancer_type load balancer found for Project $PROJECT_ID";
-      echo "";
+      echo $BLANK_LINE;
     fi
     return 1
   fi
@@ -244,12 +244,13 @@ if [[ $PROJECTS != "[]" ]]; then
             else
                 echo "NO Cloud Run Services found for Project $PROJECT_ID"
                 echo ""
-            fi   
+            fi;
+        sleep $SLEEP_SECONDS;
     done 
 else # if no projects
   if [[ $CSV != "True" ]]; then
     echo "No projects found"
-    echo ""
+    echo $BLANK_LINE;
   fi
 fi
 

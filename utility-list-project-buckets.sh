@@ -53,7 +53,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	if ! api_enabled storage.googleapis.com; then
 		if [[ $CSV != "True" ]]; then
 			echo "Storage API is not enabled on Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 		continue;
 	fi
@@ -62,7 +62,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	
 	if [[ $DEBUG == "True" ]]; then
 		echo "Buckets: $BUCKET_NAMES";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $BUCKET_NAMES != "" ]]; then
@@ -84,19 +84,19 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Project Application: $PROJECT_APPLICATION";
 				echo "Project Owner: $PROJECT_OWNER";
 				echo "Bucket Name: $BUCKET_NAME";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$BUCKET_NAME\"";
 			fi;
 
 		done;
-		echo "";
+		echo $BLANK_LINE;
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No storage buckets found for Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

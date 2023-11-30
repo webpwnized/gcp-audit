@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -44,7 +45,7 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 
 if [[ $CSV == "True" ]]; then
@@ -65,7 +66,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Project Info (JSON): $PROJECT_INFO";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $PROJECT_INFO != "" ]]; then
@@ -87,7 +88,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No project information found for Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
 	
@@ -100,7 +101,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		echo "Level: Project";
 		echo "Project Name: $PROJECT_NAME";
 		echo "Status: $OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE";
-		echo "";
+		echo $BLANK_LINE;
 	else
 		echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$PROJECT\", \"$PROJECT_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_PROJECT_STATUS_MESSAGE\"";
 	fi;	
@@ -151,7 +152,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Level: Instance";
 				echo "Instance Name: $INSTANCE_NAME";
 				echo "Status: $OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE\", \"$INSTANCE_NAME\", \"$VIOLATION_FLAG\", \"$OSLOGIN_ENABLED_INSTANCE_STATUS_MESSAGE\"";
 			fi;
@@ -160,10 +161,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "COMMENT: No instances found for Project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
 	
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

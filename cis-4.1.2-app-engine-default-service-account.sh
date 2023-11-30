@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -44,7 +45,7 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 
 for PROJECT_ID in $PROJECT_IDS; do	
@@ -62,7 +63,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Application (JSON): $APPLICATION";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $APPLICATION != "" ]]; then
@@ -117,15 +118,16 @@ for PROJECT_ID in $PROJECT_IDS; do
 			echo "Service Account Status: $SERVICE_ACCOUNT_STATUS_MESSAGE";
 			echo "Roles: $ROLES";
 			echo "$ROLES_STATUS_MESSAGE";
-			echo "";
+			echo $BLANK_LINE;
 		else
 			echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$APPLICATION_NAME\", \"$DEFAULT_HOSTNAME\", \"$CODE_BUCKET\", \"$DEFAULT_BUCKET\", \"$SERVING_STATUS\", \"$SERVICE_ACCOUNT\", \"$SERVICE_ACCOUNT_STATUS_MESSAGE\", $ROLES, \"$ROLES_STATUS_MESSAGE\"";
 		fi;		
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No application found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
+	sleep $SLEEP_SECONDS;
 done;
 

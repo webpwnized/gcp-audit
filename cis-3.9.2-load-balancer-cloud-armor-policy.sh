@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source common-constants.inc;
 source functions.inc;
 
 function hasHTTPLoadBalancer() {
@@ -39,7 +40,7 @@ function listCloudArmorPolicies() {
 		    echo "\"$PROJECT_ID\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\" \"No Policy\",\"\",\"\",\"\"";
 		else
 		    echo "No Cloud Armor policies found for project $PROJECT_ID";
-		    echo "";
+		    echo $BLANK_LINE;
 		fi;
 		return;
 	fi;
@@ -66,24 +67,24 @@ function listCloudArmorPolicies() {
 		    	RULE_ACTION=$(echo $RULE | jq -rc '.action');
 		    	RULE_DESCRIPTION=$(echo $RULE | jq -rc '.description');
 		    	RULE_MATCH=$(echo $RULE | jq -rc '.match');
-		    	echo "";
+		    	echo $BLANK_LINE;
 		    	echo "Rule Description: $RULE_DESCRIPTION";
 		    	echo "Rule Action: $RULE_ACTION";
 		    	echo "Rule Match: $RULE_MATCH";
 		    done;
-		    echo "";
+		    echo $BLANK_LINE;
 		fi;
 	done;
 }
 
 function debugCloudArmorPolicies() {
 	echo "Cloud Armor Policies (JSON): $CLOUD_ARMOR_POLICIES";
-	echo "";
+	echo $BLANK_LINE;
 }
 
 function debugProjects() {
 	echo "Projects (JSON): $PROJECTS";
-	echo "";
+	echo $BLANK_LINE;
 }
 
 function printCSVHeaderRow() {
@@ -128,7 +129,7 @@ declare PROJECTS=$(get_projects "$PROJECT_ID");
 
 if [[ $PROJECTS == "[]" ]]; then
     echo "No projects found";
-    echo "";
+    echo $BLANK_LINE;
     exit 0;
 fi;
 
@@ -154,12 +155,13 @@ for PROJECT_ID in $PROJECTS; do
 	if [[ "$(hasHTTPLoadBalancer)" == "0" ]]; then
 		if [[ $CSV != "True" ]]; then
 		    echo "No HTTP Load Balancers found for project $PROJECT_ID";
-		    echo "";
+		    echo $BLANK_LINE;
 		fi;
 		continue;
 	fi;
 
 	listCloudArmorPolicies;
+	sleep $SLEEP_SECONDS;
 done;
 
 

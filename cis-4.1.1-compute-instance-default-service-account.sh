@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -44,7 +45,7 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 
 if [[ $CSV == "True" ]]; then
@@ -66,7 +67,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Instances (JSON): $INSTANCES";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $INSTANCES != "[]" ]]; then
@@ -118,7 +119,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo $SCOPES;
 				echo "Roles: $ROLES";
 				echo "$ROLES_STATUS_MESSAGE";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE_NAME\", \"$SERVICE_ACCOUNTS\", \"$IS_SA_VIOLATION\", \"$IS_ROLE_VIOLATION\", \"$ROLES\", \"$ROLES_STATUS_MESSAGE\", \"$SERVICE_ACCOUNT_STATUS_MESSAGE\", \"$SCOPES\"";
 			fi;		
@@ -126,9 +127,9 @@ for PROJECT_ID in $PROJECT_IDS; do
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No instances found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

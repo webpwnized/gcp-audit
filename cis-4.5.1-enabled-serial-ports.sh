@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------";
 declare PROJECT_IDS="";
@@ -45,7 +46,7 @@ fi;
 
 if [[ $DEBUG == "True" ]]; then
 	echo "Projects: $PROJECT_IDS";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 
 if [[ $CSV == "True" ]]; then
@@ -67,7 +68,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 	if [[ $DEBUG == "True" ]]; then
 		echo "Instances (JSON): $INSTANCES";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $INSTANCES != "[]" ]]; then
@@ -79,7 +80,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 		
 			if [[ $DEBUG == "True" ]]; then
 				echo "Instance (JSON): $INSTANCES";
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 
 			INSTANCE_NAME=$(echo $INSTANCE | jq -rc '.name');
@@ -90,7 +91,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
 			if [[ $DEBUG == "True" ]]; then
 				echo "Instance Metadata (JSON): $(echo $INSTANCE | jq -rc '.metadata.items[]')";
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 			
 			if [[ $ENABLED_SERIAL_PORTS == "" ]]; then
@@ -120,19 +121,19 @@ for PROJECT_ID in $PROJECT_IDS; do
 				echo "Serial Port Status: $ENABLED_SERIAL_PORTS_STATUS_MESSAGE";
 				echo "Serial Port Logging Setting: $ENABLED_SERIAL_PORT_LOGGING";
 				echo "Serial Port Logging Status: $ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE";
-				echo "";
+				echo $BLANK_LINE;
 			else
 				echo "\"$PROJECT_ID\", \"$PROJECT_NAME\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$INSTANCE_NAME\", \"$ENABLED_SERIAL_PORTS\", \"$ENABLED_SERIAL_PORT_LOGGING\", \"$ENABLED_SERIAL_PORTS_STATUS_MESSAGE\", \"$ENABLED_SERIAL_PORT_LOGGING_STATUS_MESSAGE\"";
 			fi;		
 
 		done;
-		echo "";
+		echo $BLANK_LINE;
 	else
 		if [[ $CSV != "True" ]]; then
 			echo "No instances found for project $PROJECT_ID";
-			echo "";
+			echo $BLANK_LINE;
 		fi;
 	fi;
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

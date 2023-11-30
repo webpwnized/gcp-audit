@@ -13,10 +13,11 @@ if [[ $RESULTS != "[]" ]]; then
 		echo "Name: $NAME";
 		if [[ $APPLICATION != "null" ]]; then echo "Application: $APPLICATION"; fi;		
 		if [[ $OWNER != "null" ]]; then echo "Owner: $OWNER"; fi;
-		echo "";
+		echo $BLANK_LINE;
+		sleep $SLEEP_SECONDS;
 	done;
 else
 	echo "No projects found";
-	echo "";
+	echo $BLANK_LINE;
 fi;
 

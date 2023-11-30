@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare ORGANIZATION_IDS="";
 declare FOLDER_ID="";
@@ -77,7 +78,7 @@ echo $ORGANIZATIONS | jq -rc '.[]' | while IFS='' read -r ORGANIZATION; do
 		echo "---------------------------------------------------------------------------------";
 		echo "Organization $ORGANIZATION_DISPLAY_NAME";
 		echo "---------------------------------------------------------------------------------";
-		echo "";
+		echo $BLANK_LINE;
 	fi;
 
 	if [[ $FOLDER_IDS == "" ]]; then
@@ -137,7 +138,7 @@ echo $ORGANIZATIONS | jq -rc '.[]' | while IFS='' read -r ORGANIZATION; do
 					echo "Log Sink Destination: $SINK_DESTINATION";
 					echo "Log Sink Filter Message: $SINK_FILTER_MESSAGE";
 					echo "Log Sink Filter: $SINK_FILTER";
-					echo "";
+					echo $BLANK_LINE;
 				else
 					echo "\"$ORGANIZATION_DISPLAY_NAME\", \"$FOLDER_DISPLAY_NAME\", \"$SINK_NAME\", \"$SINK_DESTINATION\", \"$SINK_FILTER_IS_DEFAULT_DEFAULT\", \"$SINK_FILTER_IS_REQUIRED_DEFAULT\", \"$SINK_FILTER_MESSAGE\", \"$SINK_FILTER\"";
 				fi;		
@@ -146,10 +147,10 @@ echo $ORGANIZATIONS | jq -rc '.[]' | while IFS='' read -r ORGANIZATION; do
 		else
 			if [[ $CSV != "True" ]]; then
 				echo "No log sinks found for folder $FOLDER_DISPLAY_NAME";
-				echo "";
+				echo $BLANK_LINE;
 			fi;
 		fi;
-		sleep 0.5;
+		sleep $SLEEP_SECONDS;
 	done; #folders
 done; #organizations
 

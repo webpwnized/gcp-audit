@@ -53,18 +53,18 @@ if [[ $PROJECT_IDS != "[]" ]]; then
 
     echo $PROJECT_IDS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
-	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
-        PROJECT_NAME=$(echo $PROJECT | jq -r '.name');
-        PROJECT_OWNER=$(echo $PROJECT | jq -r '.labels.adid');
-        PROJECT_APPLICATION=$(echo $PROJECT | jq -r '.labels.app');
-        MEMBERS=$(gcloud projects get-iam-policy $PROJECT_ID --format="json" | jq -r '.bindings[] | select(.role=="roles/'$ROLE'") | .members[]');
-        ENVIRONMENT="";
-        
-        for ENV in "sandbox" "dev" "sys" "uat" "prod"; do
-		if [[ $(grep -ic $ENV <<< $PROJECT_ID) == 1 ]]; then
-			ENVIRONMENT=$ENV;
-		fi;
-	done;
+		PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
+			PROJECT_NAME=$(echo $PROJECT | jq -r '.name');
+			PROJECT_OWNER=$(echo $PROJECT | jq -r '.labels.adid');
+			PROJECT_APPLICATION=$(echo $PROJECT | jq -r '.labels.app');
+			MEMBERS=$(gcloud projects get-iam-policy $PROJECT_ID --format="json" | jq -r '.bindings[] | select(.role=="roles/'$ROLE'") | .members[]');
+			ENVIRONMENT="";
+			
+			for ENV in "sandbox" "dev" "sys" "uat" "prod"; do
+			if [[ $(grep -ic $ENV <<< $PROJECT_ID) == 1 ]]; then
+				ENVIRONMENT=$ENV;
+			fi;
+		done;
 
         if [[ $MEMBERS != "" ]]; then
         	if [[ $CSV != "True" ]]; then
@@ -74,7 +74,7 @@ if [[ $PROJECT_IDS != "[]" ]]; then
 			echo "Project Application: $PROJECT_APPLICATION";            
 			echo -e "Members ($ROLE role):\n$MEMBERS";
 			echo "Environment: $ENVIRONMENT";
-            		echo "";
+            		echo $BLANK_LINE;
         	else
         		for MEMBER in $MEMBERS;do
         			ACCOUNT_TYPE=$(echo $MEMBER | cut -d ":" -f1);
@@ -83,10 +83,11 @@ if [[ $PROJECT_IDS != "[]" ]]; then
         		done;
         	fi;
         fi;
+		sleep $SLEEP_SECONDS;
     done;
 else
 	if [[ $CSV != "True" ]]; then
     		echo "No projects found";
-    		echo "";
+    		echo $BLANK_LINE;
 	fi;
 fi;

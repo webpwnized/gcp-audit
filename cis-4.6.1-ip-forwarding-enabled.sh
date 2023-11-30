@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 declare SEPARATOR="---------------------------------------------------------------------------------"
 declare PROJECT_IDS=""
@@ -115,7 +116,7 @@ for PROJECT_ID in $PROJECT_IDS; do
             echo ""
         fi
     fi
-    sleep 0.5
+    sleep $SLEEP_SECONDS;
 done
 
 

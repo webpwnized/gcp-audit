@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 function initializeVariables() {
 	# Variables are global scope if they are not preceeded by the local keyword
@@ -24,25 +25,25 @@ function initializeVariables() {
 function debugProjects() {
 	# Variables are global scope if they are not preceeded by the local keyword
 	echo "Project ID: $PROJECT_ID";
-	echo "";
+	echo $BLANK_LINE;
 	echo "Projects";
 	echo $PROJECTS;
-	echo "";
+	echo $BLANK_LINE;
 };
 
 function debugProxy() {
 	echo "$PROXY_TYPE (JSON): $PROXY";
-	echo "";
+	echo $BLANK_LINE;
 };
 
 function debugSSLPolicy() {
 	echo "SSL Policy (JSON): $SSL_POLICY";
-	echo "";
+	echo $BLANK_LINE;
 };
 
 function debugSSLPolicyDetails() {
 	echo "SSL Policy Details (JSON): $SSL_POLICY_DETAILS";
-	echo "";
+	echo $BLANK_LINE;
 };
 
 function printOutput() {
@@ -61,7 +62,7 @@ function printOutput() {
 		echo "TLS Policy Minimum Version: $SSL_POLICY_MIN_VERSION";
 		echo "TLS Policy Minimum Version Status: $SSL_POLICY_MIN_VERSION_MESSAGE";
 		echo "TLS Ciphers: $SSL_POLICY_CIPHER_SUITES";		
-		echo "";
+		echo $BLANK_LINE;
 	else
 		echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$PROXY_NAME\", \"$PROXY_TYPE\", \"$SSL_POLICY_NAME\", \"$SSL_POLICY_MIN_VERSION\", \"$IS_IMPLEMENTING_ENCRYPTION\", \"$IS_USING_DEFAULT_POLICY\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE\", \"$IS_SSL_POLICY_MIN_VERSION_SECURE\", \"$IS_IMPLEMENTING_ENCRYPTION_MESSAGE\", \"$IS_USING_DEFAULT_POLICY_MESSAGE\", \"$SSL_POLICY_PROFILE\", \"$IS_USING_SECURE_SSL_POLICY_PROFILE_MESSAGE\", \"$SSL_POLICY_MIN_VERSION_MESSAGE\", \"$SSL_POLICY_CIPHER_SUITES\"";
 	fi; # end if $CSV != "True"
@@ -171,151 +172,151 @@ if [[ $PROJECTS != "[]" ]]; then
 
     echo $PROJECTS | jq -rc '.[]' | while IFS='' read PROJECT;do
 
-	PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
-		
-	set_project $PROJECT_ID;
-	
-	if ! api_enabled compute.googleapis.com; then
-		if [[ $CSV != "True" ]]; then
-			echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
-		fi;
-		continue;
-	fi;
-
-	# Get project details
-	get_project_details $PROJECT_ID
-
-	PROXY_TYPE="HTTP Load Balancers";
-	initializeVariables;
-	
-	declare RESULTS=$(gcloud compute target-http-proxies list --quiet --format="json");
-
-	if [[ $RESULTS != "[]" ]]; then
-	
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
-		
-			if [[ $DEBUG == "True" ]]; then
-				debugProxy;
-			fi; # end if $DEBUG == "True"
-
-			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
-			printOutput;
-
-		done; # looping through PROXY
-		
-	else # there are no results
-		if [[ $CSV != "True" ]]; then
-			echo "No $PROXY_TYPE found for $PROJECT_ID";
-			echo "";
-		fi;
-	fi; # end if $RESULTS != "[]"
-
-	
-	PROXY_TYPE="TCP Load Balancers";
-	initializeVariables;
-
-	declare RESULTS=$(gcloud compute target-tcp-proxies list --quiet --format="json");
-
-	if [[ $RESULTS != "[]" ]]; then
-	
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
-		
-			if [[ $DEBUG == "True" ]]; then
-				debugProxy;
-			fi; # end if $DEBUG == "True"
-
-			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
-			printOutput;
-
-		done; # looping through PROXY
-		
-	else # there are no results
-		if [[ $CSV != "True" ]]; then
-			echo "No $PROXY_TYPE found for $PROJECT_ID";
-			echo "";
-		fi;
-	fi; # end if $RESULTS != "[]"
-
-
-	PROXY_TYPE="TLS (SSL) Load Balancers";
-	initializeVariables;
-
-	declare RESULTS=$(gcloud compute target-ssl-proxies list --quiet --format="json");
-
-	if [[ $RESULTS != "[]" ]]; then
-
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
-
-			if [[ $DEBUG == "True" ]]; then
-				debugProxy;
-			fi; # end if $DEBUG == "True"
+		PROJECT_ID=$(echo $PROJECT | jq -r '.projectId');
 			
-			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
-			SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
-
-			if [[ $DEBUG == "True" ]]; then
-				debugSSLPolicy;
-			fi; # end if $DEBUG == "True"
-			
-			if [[ $SSL_POLICY != "" ]]; then
-				processSSLPolicy;
-			fi; # end if $SSL_POLICY == ""
-
-			printOutput;
-
-		done; # looping through PROXY
-
-	else # there are no results
-		if [[ $CSV != "True" ]]; then
-			echo "No $PROXY_TYPE found for $PROJECT_ID";
-			echo "";
+		set_project $PROJECT_ID;
+		
+		if ! api_enabled compute.googleapis.com; then
+			if [[ $CSV != "True" ]]; then
+				echo "Compute Engine API is not enabled for Project $PROJECT_ID.";
+			fi;
+			continue;
 		fi;
-	fi; # end if $RESULTS != "[]"
 
+		# Get project details
+		get_project_details $PROJECT_ID
 
-	PROXY_TYPE="HTTPS Load Balancers";
-	initializeVariables;
+		PROXY_TYPE="HTTP Load Balancers";
+		initializeVariables;
+		
+		declare RESULTS=$(gcloud compute target-http-proxies list --quiet --format="json");
 
-	declare RESULTS=$(gcloud compute target-https-proxies list --quiet --format="json");
-
-	if [[ $RESULTS != "[]" ]]; then
-
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
-
-			if [[ $DEBUG == "True" ]]; then
-				debugProxy;
-			fi; # end if $DEBUG == "True"
+		if [[ $RESULTS != "[]" ]]; then
+		
+			echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
 			
-			PROXY_NAME=$(echo $PROXY | jq -rc '.name');
-			SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
+				if [[ $DEBUG == "True" ]]; then
+					debugProxy;
+				fi; # end if $DEBUG == "True"
 
-			if [[ $DEBUG == "True" ]]; then
-				debugSSLPolicy;
-			fi; # end if $DEBUG == "True"
+				PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+				printOutput;
+
+			done; # looping through PROXY
 			
-			if [[ $SSL_POLICY != "" ]]; then
-				processSSLPolicy;
-			fi; # end if $SSL_POLICY == ""
+		else # there are no results
+			if [[ $CSV != "True" ]]; then
+				echo "No $PROXY_TYPE found for $PROJECT_ID";
+				echo $BLANK_LINE;
+			fi;
+		fi; # end if $RESULTS != "[]"
 
-			printOutput;
+		
+		PROXY_TYPE="TCP Load Balancers";
+		initializeVariables;
 
-		done; # looping through PROXY
+		declare RESULTS=$(gcloud compute target-tcp-proxies list --quiet --format="json");
 
-	else # there are no results
-		if [[ $CSV != "True" ]]; then
-			echo "No $PROXY_TYPE found for $PROJECT_ID";
-			echo "";
-		fi;
-	fi; # end if $RESULTS != "[]"
-	
-	#sleep 0.5;
+		if [[ $RESULTS != "[]" ]]; then
+		
+			echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
+			
+				if [[ $DEBUG == "True" ]]; then
+					debugProxy;
+				fi; # end if $DEBUG == "True"
+
+				PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+				printOutput;
+
+			done; # looping through PROXY
+			
+		else # there are no results
+			if [[ $CSV != "True" ]]; then
+				echo "No $PROXY_TYPE found for $PROJECT_ID";
+				echo $BLANK_LINE;
+			fi;
+		fi; # end if $RESULTS != "[]"
+
+
+		PROXY_TYPE="TLS (SSL) Load Balancers";
+		initializeVariables;
+
+		declare RESULTS=$(gcloud compute target-ssl-proxies list --quiet --format="json");
+
+		if [[ $RESULTS != "[]" ]]; then
+
+			echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
+
+				if [[ $DEBUG == "True" ]]; then
+					debugProxy;
+				fi; # end if $DEBUG == "True"
+				
+				PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+				SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
+
+				if [[ $DEBUG == "True" ]]; then
+					debugSSLPolicy;
+				fi; # end if $DEBUG == "True"
+				
+				if [[ $SSL_POLICY != "" ]]; then
+					processSSLPolicy;
+				fi; # end if $SSL_POLICY == ""
+
+				printOutput;
+
+			done; # looping through PROXY
+
+		else # there are no results
+			if [[ $CSV != "True" ]]; then
+				echo "No $PROXY_TYPE found for $PROJECT_ID";
+				echo $BLANK_LINE;
+			fi;
+		fi; # end if $RESULTS != "[]"
+
+
+		PROXY_TYPE="HTTPS Load Balancers";
+		initializeVariables;
+
+		declare RESULTS=$(gcloud compute target-https-proxies list --quiet --format="json");
+
+		if [[ $RESULTS != "[]" ]]; then
+
+			echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r PROXY;do
+
+				if [[ $DEBUG == "True" ]]; then
+					debugProxy;
+				fi; # end if $DEBUG == "True"
+				
+				PROXY_NAME=$(echo $PROXY | jq -rc '.name');
+				SSL_POLICY=$(echo $PROXY | jq -rc '.sslPolicy // empty');
+
+				if [[ $DEBUG == "True" ]]; then
+					debugSSLPolicy;
+				fi; # end if $DEBUG == "True"
+				
+				if [[ $SSL_POLICY != "" ]]; then
+					processSSLPolicy;
+				fi; # end if $SSL_POLICY == ""
+
+				printOutput;
+
+			done; # looping through PROXY
+
+		else # there are no results
+			if [[ $CSV != "True" ]]; then
+				echo "No $PROXY_TYPE found for $PROJECT_ID";
+				echo $BLANK_LINE;
+			fi;
+		fi; # end if $RESULTS != "[]"
+		
+		sleep $SLEEP_SECONDS;
 
     done; # looping through projects
     
 else # if no projects
 	if [[ $CSV != "True" ]]; then
     		echo "No projects found";
-    		echo "";
+    		echo $BLANK_LINE;
 	fi;
 fi; # if projects
 

@@ -88,22 +88,22 @@ for PROJECT_ID in $PROJECT_IDS; do
 			    if [[ $INGRESS_SETTING == "all" ]]; then
 			        echo "Violation: The ingress setting is configured to ALL, which allows all requests including requests directly from the internet";
 			    fi
-			    echo "";
+			    echo $BLANK_LINE;
 			fi
 			
 		done;
 
 		if [[ $CSV != "True" ]]; then
-			echo "";
+			echo $BLANK_LINE;
 		fi
 
 	else
 	    if [[ $CSV != "True" ]]; then
 	    	echo "No Cloud Run Services found for Project $PROJECT_ID";
-	    	echo "";
+	    	echo $BLANK_LINE;
 	    fi
 	fi;
 
-	sleep 0.5;
+	sleep $SLEEP_SECONDS;
 done;
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source functions.inc
+source common-constants.inc;
+source functions.inc;
 
 PROJECT_IDS="";
 DEBUG="False";
@@ -41,12 +42,14 @@ fi;
 for PROJECT_ID in $PROJECT_IDS; do
 
 	# Get project details
-        get_project_details $PROJECT_ID
+  get_project_details $PROJECT_ID
 
 	echo "IAM Policy for Project $PROJECT_ID"
-    	echo "Project Application: $PROJECT_APPLICATION";
+  echo "Project Application: $PROJECT_APPLICATION";
 	echo "Project Owner: $PROJECT_OWNER";
-	echo ""
+	echo $BLANK_LINE;
 	gcloud projects get-iam-policy $PROJECT_ID;
-	echo ""
+	echo $BLANK_LINE;
+
+  sleep $SLEEP_SECONDS;
 done;
