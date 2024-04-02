@@ -10,11 +10,11 @@ function output_header() {
 };
 
 function output_csv_header() {
-	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"INSTANCE_NAME\", \"INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG\", \"INSTANCE_STATUS\"";
+	echo "\"PROJECT_NAME\", \"PROJECT_APPLICATION\", \"PROJECT_OWNER\", \"INSTANCE_NAME\", \"INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG\", \"VIOLATION\", \"INSTANCE_STATUS\"";
 };
 
 function output_instance_csv() {
-	echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$INSTANCE_NAME\", \"$INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG\", \"$INSTANCE_STATUS\"";
+	echo "\"$PROJECT_NAME\", \"$PROJECT_APPLICATION\", \"$PROJECT_OWNER\", \"$INSTANCE_NAME\", \"$INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG\", \"$VIOLATION\", \"$INSTANCE_STATUS\"";
 };
 
 function output_instance() {
@@ -31,6 +31,7 @@ function output_instance_text() {
 	echo "Project Owner: $PROJECT_OWNER";
 	echo "Instance Name: $INSTANCE_NAME";
 	echo "Instance Status: $INSTANCE_STATUS";
+	echo "Violation: $VIOLATION";
 	echo $BLANK_LINE;
 };
 
@@ -42,9 +43,11 @@ function parse_instance() {
 	
 	INSTANCE_STATUS="INFO: Instance does not allow Project-wide SSH keys";
 	INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG="False";
+	VIOLATION="False"; # Initially assuming no violation
 	if [[ $BLOCK_PROJECT_WIDE_SSH_KEYS != "true" ]]; then
 		INSTANCE_STATUS="VIOLATION: Instance allows Project-wide SSH keys";
 		INSTANCE_ALLOWS_PROJECT_WIDE_SSH_KEYS_FLAG="True";
+		VIOLATION="True"; # Marking violation if project-wide SSH keys are allowed
 	fi;
 };
 
@@ -117,4 +120,3 @@ else
 		echo $BLANK_LINE;
 	fi;
 fi;
-
