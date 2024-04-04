@@ -8,43 +8,46 @@ declare FOLDER_ID="";
 declare DEBUG="False";
 declare CSV="False";
 declare HELP=$(cat << EOL
-	$0 [-o, --organization ORGANIZATION] [-f, --folder FOLDER] [-c, --csv] [-d, --debug] [-h, --help]	
+        $0 [-o, --organization ORGANIZATION] [-f, --folder FOLDER] [-c, --csv] [-d, --debug] [-h, --help] [-p, --project PROJECT]
 EOL
 );
 
 for arg in "$@"; do
   shift
   case "$arg" in
-    "--help") 			set -- "$@" "-h" ;;
-    "--debug") 			set -- "$@" "-d" ;;
-    "--csv") 			set -- "$@" "-c" ;;
-    "--orgnanization")   	set -- "$@" "-o" ;;
-    "--folder")   		set -- "$@" "-f" ;;
-    *)        			set -- "$@" "$arg"
+    "--help")                   set -- "$@" "-h" ;;
+    "--debug")                  set -- "$@" "-d" ;;
+    "--csv")                    set -- "$@" "-c" ;;
+    "--orgnanization")          set -- "$@" "-o" ;;
+    "--folder")                 set -- "$@" "-f" ;;
+    "--project")                set -- "$@" "-p" ;;
+    *)                          set -- "$@" "$arg"
   esac
 done
 
-while getopts "hdco:f:" option
-do 
+while getopts "hdco:f:p:" option
+do
     case "${option}"
         in
         o)
-        	ORGNAIZATION_IDS=${OPTARG};;
+                ORGANIZATION_IDS=${OPTARG};;
         f)
-        	FOLDER_IDS=${OPTARG};;
+                FOLDER_IDS=${OPTARG};;
         d)
-        	DEBUG="True";;
+                DEBUG="True";;
+        p)
+                PROJECT_ID=${OPTARG};;
         c)
-        	CSV="True";;
-	h)
-        	echo $HELP; 
-        	exit 0;;
+                CSV="True";;
+        h)
+                echo $HELP;
+                exit 0;;
     esac;
 done;
 
 if ! api_enabled logging.googleapis.com; then
-	echo "WARNING: Logging API is not enabled";
-	exit 1000;
+        echo "WARNING: Logging API is not enabled";
+        exit 1000;
 fi;
 
 declare DEFAULT_DEFAULT_LOG_SINK_FILTER="NOT LOG_ID(\"cloudaudit.googleapis.com/activity\") AND NOT LOG_ID(\"externalaudit.googleapis.com/activity\") AND NOT LOG_ID(\"cloudaudit.googleapis.com/system_event\") AND NOT LOG_ID(\"externalaudit.googleapis.com/system_event\") AND NOT LOG_ID(\"cloudaudit.googleapis.com/access_transparency\") AND NOT LOG_ID(\"externalaudit.googleapis.com/access_transparency\")";
@@ -62,95 +65,94 @@ if [[ $ORGANIZATIONAL_IDS == "" ]]; then
 fi;
 
 if [[ $DEBUG == "True" ]]; then
-	echo "Organizations (JSON): $ORGANIZATIONS";
+        echo "Organizations (JSON): $ORGANIZATIONS";
 fi;
 
 if [[ $CSV == "True" ]]; then
-	echo "\"ORGANIZATION_DISPLAY_NAME\", \"FOLDER_DISPLAY_NAME\", \"SINK_NAME\", \"SINK_DESTINATION\", \"SINK_FILTER_IS_DEFAULT_DEFAULT\", \"SINK_FILTER_IS_REQUIRED_DEFAULT\", \"SINK_FILTER_MESSAGE\", \"SINK_FILTER\"";
+        echo "\"ORGANIZATION_DISPLAY_NAME\", \"FOLDER_DISPLAY_NAME\", \"SINK_NAME\", \"SINK_DESTINATION\", \"SINK_FILTER_IS_DEFAULT_DEFAULT\", \"SINK_FILTER_IS_REQUIRED_DEFAULT\", \"SINK_FILTER_MESSAGE\", \"SINK_FILTER\"";
 fi;
 
 echo $ORGANIZATIONS | jq -rc '.[]' | while IFS='' read -r ORGANIZATION; do
 
-	ORGANIZATION_NAME=$(echo $ORGANIZATION | jq -rc '.name' | cut -d"/" -f2);
-	ORGANIZATION_DISPLAY_NAME=$(echo $ORGANIZATION | jq -rc '.displayName');
-	
-	if [[ $CSV != "True" ]]; then
-		echo "---------------------------------------------------------------------------------";
-		echo "Organization $ORGANIZATION_DISPLAY_NAME";
-		echo "---------------------------------------------------------------------------------";
-		echo $BLANK_LINE;
-	fi;
+        ORGANIZATION_NAME=$(echo $ORGANIZATION | jq -rc '.name' | cut -d"/" -f2);
+        ORGANIZATION_DISPLAY_NAME=$(echo $ORGANIZATION | jq -rc '.displayName');
 
-	if [[ $FOLDER_IDS == "" ]]; then
-		declare FOLDERS=$(gcloud resource-manager folders list --format="json" --organization="$ORGANIZATION_NAME");
-	fi;
-	
-	if [[ $DEBUG == "True" ]]; then
-		echo "Folders (JSON): $FOLDERS";
-	fi;
+        if [[ $CSV != "True" ]]; then
+                echo "---------------------------------------------------------------------------------";
+                echo "Organization $ORGANIZATION_DISPLAY_NAME";
+                echo "---------------------------------------------------------------------------------";
+                echo $BLANK_LINE;
+        fi;
 
-	echo $FOLDERS | jq -rc '.[]' | while IFS='' read -r FOLDER; do
-	
-		FOLDER_NAME=$(echo $FOLDER | jq -rc '.name' | cut -d"/" -f2);
-		FOLDER_DISPLAY_NAME=$(echo $FOLDER | jq -rc '.displayName');
+        if [[ $FOLDER_IDS == "" ]]; then
+                declare FOLDERS=$(gcloud resource-manager folders list --format="json" --organization="$ORGANIZATION_NAME");
+        fi;
 
-		declare SINKS=$(gcloud logging sinks list --format="json" --folder="$FOLDER_NAME");
-		
-		if [[ $DEBUG == "True" ]]; then
-			echo "Sinks (JSON): $SINKS";
-		fi;
-		
-		if [[ $CSV != "True" ]]; then
-			echo "---------------------------------------------------------------------------------";
-			echo "Log Sinks for Folder $FOLDER_DISPLAY_NAME";
-			echo "---------------------------------------------------------------------------------";
-		fi;
+        if [[ $DEBUG == "True" ]]; then
+                echo "Folders (JSON): $FOLDERS";
+        fi;
 
-		if [[ $SINKS != "[]" ]]; then
-		
-			echo $SINKS | jq -rc '.[]' | while IFS='' read -r SINK;do
-			
-				if [[ $DEBUG == "True" ]]; then
-					echo "Log Sink (JSON): $SINK";
-				fi;
+        echo $FOLDERS | jq -rc '.[]' | while IFS='' read -r FOLDER; do
 
-				SINK_NAME=$(echo $SINK | jq -rc '.name');
-				SINK_DESTINATION=$(echo $SINK | jq -rc '.destination');
-				SINK_FILTER=$(echo $SINK | jq -rc '.filter');
-				SINK_FILTER_IS_DEFAULT_DEFAULT="False";
-				SINK_FILTER_IS_REQUIRED_DEFAULT="False";
-				
-				if [[ $SINK_FILTER == $DEFAULT_DEFAULT_LOG_SINK_FILTER ]]; then
-					SINK_FILTER_IS_DEFAULT_DEFAULT="True";
-					SINK_FILTER_MESSAGE=$SINK_FILTER_IS_DEFAULT_DEFAULT_MESSAGE;
-				elif [[ $SINK_FILTER == $DEFAULT_REQUIRED_LOG_SINK_FILTER ]]; then
-					SINK_FILTER_IS_REQUIRED_DEFAULT="True";
-					SINK_FILTER_MESSAGE=$SINK_FILTER_IS_REQUIRED_DEFAULT_MESSAGE;			
-				else
-					SINK_FILTER_MESSAGE=$SINK_FILTER_IS_NOT_DEFAULT_MESSAGE;
-				fi;
+                FOLDER_NAME=$(echo $FOLDER | jq -rc '.name' | cut -d"/" -f2);
+                FOLDER_DISPLAY_NAME=$(echo $FOLDER | jq -rc '.displayName');
 
-				# Print the results gathered above
-				if [[ $CSV != "True" ]]; then
-					echo "Organization: $ORGANIZATION_DISPLAY_NAME";
-					echo "Folder: $FOLDER_DISPLAY_NAME";
-					echo "Log Sink Name: $SINK_NAME";
-					echo "Log Sink Destination: $SINK_DESTINATION";
-					echo "Log Sink Filter Message: $SINK_FILTER_MESSAGE";
-					echo "Log Sink Filter: $SINK_FILTER";
-					echo $BLANK_LINE;
-				else
-					echo "\"$ORGANIZATION_DISPLAY_NAME\", \"$FOLDER_DISPLAY_NAME\", \"$SINK_NAME\", \"$SINK_DESTINATION\", \"$SINK_FILTER_IS_DEFAULT_DEFAULT\", \"$SINK_FILTER_IS_REQUIRED_DEFAULT\", \"$SINK_FILTER_MESSAGE\", \"$SINK_FILTER\"";
-				fi;		
+                declare SINKS=$(gcloud logging sinks list --format="json" --folder="$FOLDER_NAME");
 
-			done; #sinks
-		else
-			if [[ $CSV != "True" ]]; then
-				echo "No log sinks found for folder $FOLDER_DISPLAY_NAME";
-				echo $BLANK_LINE;
-			fi;
-		fi;
-		sleep $SLEEP_SECONDS;
-	done; #folders
+                if [[ $DEBUG == "True" ]]; then
+                        echo "Sinks (JSON): $SINKS";
+                fi;
+
+                if [[ $CSV != "True" ]]; then
+                        echo "---------------------------------------------------------------------------------";
+                        echo "Log Sinks for Folder $FOLDER_DISPLAY_NAME";
+                        echo "---------------------------------------------------------------------------------";
+                fi;
+
+                if [[ $SINKS != "[]" ]]; then
+
+                        echo $SINKS | jq -rc '.[]' | while IFS='' read -r SINK;do
+
+                                if [[ $DEBUG == "True" ]]; then
+                                        echo "Log Sink (JSON): $SINK";
+                                fi;
+
+                                SINK_NAME=$(echo $SINK | jq -rc '.name');
+                                SINK_DESTINATION=$(echo $SINK | jq -rc '.destination');
+                                SINK_FILTER=$(echo $SINK | jq -rc '.filter');
+                                SINK_FILTER_IS_DEFAULT_DEFAULT="False";
+                                SINK_FILTER_IS_REQUIRED_DEFAULT="False";
+
+                                if [[ $SINK_FILTER == $DEFAULT_DEFAULT_LOG_SINK_FILTER ]]; then
+                                        SINK_FILTER_IS_DEFAULT_DEFAULT="True";
+                                        SINK_FILTER_MESSAGE=$SINK_FILTER_IS_DEFAULT_DEFAULT_MESSAGE;
+                                elif [[ $SINK_FILTER == $DEFAULT_REQUIRED_LOG_SINK_FILTER ]]; then
+                                        SINK_FILTER_IS_REQUIRED_DEFAULT="True";
+                                        SINK_FILTER_MESSAGE=$SINK_FILTER_IS_REQUIRED_DEFAULT_MESSAGE;
+                                else
+                                        SINK_FILTER_MESSAGE=$SINK_FILTER_IS_NOT_DEFAULT_MESSAGE;
+                                fi;
+
+                                # Print the results gathered above
+                                if [[ $CSV != "True" ]]; then
+                                        echo "Organization: $ORGANIZATION_DISPLAY_NAME";
+                                        echo "Folder: $FOLDER_DISPLAY_NAME";
+                                        echo "Log Sink Name: $SINK_NAME";
+                                        echo "Log Sink Destination: $SINK_DESTINATION";
+                                        echo "Log Sink Filter Message: $SINK_FILTER_MESSAGE";
+                                        echo "Log Sink Filter: $SINK_FILTER";
+                                        echo $BLANK_LINE;
+                                else
+                                        echo "\"$ORGANIZATION_DISPLAY_NAME\", \"$FOLDER_DISPLAY_NAME\", \"$SINK_NAME\", \"$SINK_DESTINATION\", \"$SINK_FILTER_IS_DEFAULT_DEFAULT\", \"$SINK_FILTER_IS_REQUIRED_DEFAULT\", \"$SINK_FILTER_MESSAGE\", \"$SINK_FILTER\"";
+                                fi;
+
+                        done; #sinks
+                else
+                        if [[ $CSV != "True" ]]; then
+                                echo "No log sinks found for folder $FOLDER_DISPLAY_NAME";
+                                echo $BLANK_LINE;
+                        fi;
+                fi;
+                sleep $SLEEP_SECONDS;
+        done; #folders
 done; #organizations
-
