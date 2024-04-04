@@ -6,7 +6,7 @@ declare ORGANIZATIONAL_IDS=$(gcloud organizations list --format="flattened(ID)" 
 
 for ORGANIZATION_ID in $ORGANIZATIONAL_IDS; do
 	echo "Working on Organizational ID $ORGANIZATION_ID"
-	declare FOLDER_IDS=$(gcloud resource-manager folders list --organization $ORGANIZATION_ID)
+	declare FOLDER_IDS=$(gcloud resource-manager folders list --organization $ORGANIZATION_ID --format="value(ID)")
 
 	for FOLDER_ID in $FOLDER_IDS; do
 		echo "Working on Folder $FOLDER_ID"
