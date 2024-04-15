@@ -63,6 +63,8 @@ function listCloudArmorPolicies() {
 		    echo "Application: $PROJECT_APPLICATION";
 		    echo "Owner: $PROJECT_OWNER";
 		    echo "Cloud Armor Policy Name: $CLOUD_ARMOR_POLICY_NAME";
+		    echo "DDoS Protection Enabled: $CLOUD_ARMOR_POLICY_DDOS_PROTECTION_ENABLED";
+		    echo "Cloud Armor Policy Rules:";
 		    echo $CLOUD_ARMOR_POLICY_RULES | jq -r -c '.[]' | while IFS='' read -r RULE; do
 		    	RULE_ACTION=$(echo $RULE | jq -rc '.action');
 		    	RULE_DESCRIPTION=$(echo $RULE | jq -rc '.description');
@@ -163,5 +165,3 @@ for PROJECT_ID in $PROJECTS; do
 	listCloudArmorPolicies;
 	sleep $SLEEP_SECONDS;
 done;
-
-
