@@ -57,6 +57,9 @@ print_csv_output() {
 
 print_fixed_console_output() {
 	echo "Project ID: $PROJECT_ID"
+	echo "HTTP Load Balancer Name: $HTTP_LOAD_BALANCER_NAME"
+	echo "HTTP Load Balancer Kind: $HTTP_LOAD_BALANCER_KIND"
+	echo "URL Map Name: $URL_MAP_NAME"
 	echo "Backend Service Name: $BACKEND_SERVICE_NAME"
 	echo "Backend Service Description: $BACKEND_SERVICE_DESCRIPTION"
 	echo "Backend Service Port: $BACKEND_SERVICE_PORT"
@@ -105,15 +108,22 @@ function parse_cloud_armor_policy() {
     RULE_DESCRIPTION="";
 	RULE_MATCH="";
 
-	local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe $CLOUD_ARMOR_POLICY_NAME --format="json")
-
-	debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES";
-    
-    if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
+    if [[ $CLOUD_ARMOR_POLICY_NAME == "" ]]; then
 		print_no_rule_console_output
-		no_output_returned "No Cloud Armor policy associated with backend service $BACKEND_SERVICE_NAME";
+		no_output_returned "No Cloud Armor policies associated with backend service $BACKEND_SERVICE_NAME";
+		return
+	else
+		local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe "$CLOUD_ARMOR_POLICY_NAME" --format="json" || echo "")
+		debug_json "Cloud Armor Policies" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES";
+	fi
+
+	if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
+		print_no_rule_console_output
+		no_output_returned "No Cloud Armor policies associated with cloud armor policy $CLOUD_ARMOR_POLICY_NAME";
 	else
 		echo "$CLOUD_ARMOR_POLICIES" | jq -r -c '.[]' | while IFS='' read -r CLOUD_ARMOR_POLICY; do
+			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICY";
+
 			local POLICY_NAME=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.name');
 			local POLICY_DDOS_PROTECTION_ENABLED=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable');
 			local POLICY_RULES=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.rules');
@@ -170,7 +180,7 @@ function get_backend_service() {
 		BACKEND_SERVICE="";
 		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
 	else
-		BACKEND_SERVICE=$(gcloud compute backend-services describe $BACKEND_SERVICE_NAME --format="json");
+		BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" || echo "");
 	fi;
 }
 
@@ -229,7 +239,6 @@ parse_load_balancers() {
 			debug_json "Backend Service" "$PROJECT_ID" "$BACKEND_SERVICE"
 			parse_backend_service "$BACKEND_SERVICE"
 			parse_cloud_armor_policy "$BACKEND_SERVICE_SECURITY_POLICY"
-			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES"
 		done
 	fi
 }
@@ -282,20 +291,23 @@ print_csv_header;
 
 for PROJECT_ID in $PROJECTS; do
 
+	set_project "$PROJECT_ID"
+
     if ! api_enabled compute.googleapis.com; then
-		no_output_returned "Compute Engine API is not enabled for Project $PROJECT_ID.";
-        continue;
-    fi;
-
-	# Call the function to get HTTP load balancers for a specific project
-	HTTP_LOAD_BALANCERS=$(get_load_balancers "HTTP" "$PROJECT_ID")
-	debug_json "HTTP Load Balancers" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
-	parse_load_balancers "HTTP" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
+        no_output_returned "Compute Engine API is not enabled for Project $PROJECT_ID."
+        continue
+    fi
 	
-	# Call the function to get HTTPS load balancers for a specific project
-	HTTPS_LOAD_BALANCERS=$(get_load_balancers "HTTPS" "$PROJECT_ID")
-	debug_json "HTTPS Load Balancers" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS";
-	parse_load_balancers "HTTPS" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS";
+    # Get and parse HTTP load balancers
+    HTTP_LOAD_BALANCERS=$(get_load_balancers "HTTP" "$PROJECT_ID")
+    debug_json "HTTP Load Balancers" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS"
+    parse_load_balancers "HTTP" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS"
 
-    sleep $SLEEP_SECONDS;
-done;
+    # Get and parse HTTPS load balancers
+    HTTPS_LOAD_BALANCERS=$(get_load_balancers "HTTPS" "$PROJECT_ID")
+    debug_json "HTTPS Load Balancers" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS"
+    parse_load_balancers "HTTPS" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS"
+
+    sleep $SLEEP_SECONDS
+
+done
