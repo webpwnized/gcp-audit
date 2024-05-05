@@ -9,51 +9,16 @@ function debug_projects() {
 	fi;
 }
 
-function debug_load_balancer() {
-	local HTTP_LOAD_BALANCER=$1
+debug_json() {
+	local DATA_TYPE=$1
+	local PROJECT_ID=$2
+	local JSON_DATA=$3
 
 	if [[ $DEBUG == "True" ]]; then
-		echo "DEBUG: HTTP Load Balancer (JSON):";
-		echo "$(jq -C '.' <<< "$HTTP_LOAD_BALANCER")";
-	fi;
-}
-
-function debug_url_map() {
-	local URL_MAP=$1
-
-	if [[ $DEBUG == "True" ]]; then
-		echo "DEBUG: URL Map (JSON):";
-		echo "$(jq -C '.' <<< "$URL_MAP")";
-	fi;
-}
-
-function debug_backend_services() {
-    local PROJECT_ID=$1
-    local BACKEND_SERVICES=$2
-    
-    if [[ $DEBUG == "True" ]]; then
-        echo "DEBUG: Project ID: $PROJECT_ID";
-        echo "DEBUG: Backend Services (JSON):";
-        echo "$(jq -C '.' <<< "$BACKEND_SERVICES")";
-    fi;
-}
-
-function debug_backend_service() {
-    local BACKEND_SERVICE=$1
-
-    if [[ $DEBUG == "True" ]]; then
-        echo "DEBUG: Backend Service (JSON):"
-        echo "$(jq -C '.' <<< "$BACKEND_SERVICE")"
-    fi
-}
-
-function debug_cloud_armor_policy() {
-	local CLOUD_ARMOR_POLICY=$1
-
-	if [[ $DEBUG == "True" ]]; then
-		echo "DEBUG: Cloud Armor Policy (JSON):";
-		echo "$(jq -C '.' <<< "$CLOUD_ARMOR_POLICY")";
-	fi;
+		echo "PROJECT: $PROJECT_ID:"
+		echo "DEBUG: $DATA_TYPE (JSON):"
+		echo "$(jq -C '.' <<< "$JSON_DATA")"
+	fi
 }
 
 function no_output_returned() {
@@ -204,11 +169,15 @@ get_load_balancers() {
 	local LOAD_BALANCER_TYPE=$1
 	local PROJECT_ID=$2
 
+	local LOAD_BALANCERS
+
 	if [[ $LOAD_BALANCER_TYPE == "HTTP" ]]; then
-		HTTP_LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json");
+		LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json");
 	elif [[ $LOAD_BALANCER_TYPE == "HTTPS" ]]; then
-		HTTPS_LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json");
+		LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json");
 	fi;
+
+	echo "$LOAD_BALANCERS"
 }
 
 debug_load_balancers() {
@@ -295,15 +264,14 @@ for PROJECT_ID in $PROJECTS; do
         continue;
     fi;
 
-	HTTP_LOAD_BALANCERS=$(gcloud compute target-http-proxies list --quiet --format="json");
-	HTTPS_LOAD_BALANCERS=$(gcloud compute target-https-proxies list --quiet --format="json");
-
-	get_load_balancers "HTTP" "$PROJECT_ID";
-	debug_load_balancers "HTTP" "$HTTP_LOAD_BALANCERS";
-	parse_load_balancers "HTTP" "$HTTP_LOAD_BALANCERS";
+	# Call the function to get HTTP load balancers for a specific project
+	HTTP_LOAD_BALANCERS=$(get_load_balancers "HTTP" "$PROJECT_ID")
+	debug_json "HTTP" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
+	parse_load_balancers "HTTP Load Balancers" "$HTTP_LOAD_BALANCERS";
 	
-	get_load_balancers "HTTPS""$PROJECT_ID";
-	debug_load_balancers "HTTPS" "$HTTPS_LOAD_BALANCERS";
+	# Call the function to get HTTPS load balancers for a specific project
+	HTTPS_LOAD_BALANCERS=$(get_load_balancers "HTTPS" "$PROJECT_ID")
+	debug_json "HTTPS Load Balancers" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS";
 	parse_load_balancers "HTTPS" "$HTTPS_LOAD_BALANCERS";
 
     sleep $SLEEP_SECONDS;
