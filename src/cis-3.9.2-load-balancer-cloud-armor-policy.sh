@@ -32,35 +32,85 @@ function no_output_returned() {
 print_csv_header() {
 	if [[ $CSV == "True" ]]; then
 		# Print CSV header row
-		echo "\"PROJECT_ID\", \"BACKEND_SERVICE_NAME\", \"BACKEND_SERVICE_DESCRIPTION\", \"BACKEND_SERVICE_PORT\", \"BACKEND_SERVICE_PORT_NAME\", \"BACKEND_SERVICE_PROTOCOL\", \"BACKEND_SERVICE_SECURITY_POLICY\", \"BACKEND_SERVICE_USED_BY\", \"CLOUD_ARMOR_POLICY_NAME\", \"DDoS_PROTECTION_ENABLED\", \"RULE_DESCRIPTION\", \"RULE_ACTION\", \"RULE_MATCH\"";
+		echo "\"PROJECT_ID\", \"HTTP_LOAD_BALANCER_NAME\", \"HTTP_LOAD_BALANCER_KIND\", \"URL_MAP_NAME\", \"BACKEND_SERVICE_NAME\", \"BACKEND_SERVICE_DESCRIPTION\", \"BACKEND_SERVICE_PORT\", \"BACKEND_SERVICE_PORT_NAME\", \"BACKEND_SERVICE_PROTOCOL\", \"BACKEND_SERVICE_SECURITY_POLICY\", \"BACKEND_SERVICE_USED_BY\", \"POLICY_NAME\", \"POLICY_DDOS_PROTECTION_ENABLED\", \"RULE_DESCRIPTION\", \"RULE_ACTION\", \"RULE_MATCH\"";
 	fi;
 }
 
-function parse_rule() {
+print_csv_output() {
+	echo "\"$PROJECT_ID\",
+	\"$HTTP_LOAD_BALANCER_NAME\",
+	\"$HTTP_LOAD_BALANCER_KIND\",
+	\"$URL_MAP_NAME\",
+	\"$BACKEND_SERVICE_NAME\",
+	\"$BACKEND_SERVICE_DESCRIPTION\",
+	\"$BACKEND_SERVICE_PORT\",
+	\"$BACKEND_SERVICE_PORT_NAME\",
+	\"$BACKEND_SERVICE_PROTOCOL\",
+	\"$BACKEND_SERVICE_SECURITY_POLICY\",
+	\"$BACKEND_SERVICE_USED_BY\",
+	\"$POLICY_NAME\",
+	\"$POLICY_DDOS_PROTECTION_ENABLED\",
+	\"$RULE_DESCRIPTION\",
+	\"$RULE_ACTION\",
+	\"$RULE_MATCH\"";
+}
+
+print_fixed_console_output() {
+	echo "Project ID: $PROJECT_ID"
+	echo "Backend Service Name: $BACKEND_SERVICE_NAME"
+	echo "Backend Service Description: $BACKEND_SERVICE_DESCRIPTION"
+	echo "Backend Service Port: $BACKEND_SERVICE_PORT"
+	echo "Backend Service Port Name: $BACKEND_SERVICE_PORT_NAME"
+	echo "Backend Service Protocol: $BACKEND_SERVICE_PROTOCOL"
+	echo "Backend Service Security Policy: $BACKEND_SERVICE_SECURITY_POLICY"
+	echo "Backend Service Used By: $BACKEND_SERVICE_USED_BY"
+	echo "Cloud Armor Policy Name: $POLICY_NAME"
+	echo "DDoS Protection Enabled: $POLICY_DDOS_PROTECTION_ENABLED"
+	echo "Cloud Armor Policy Rules:"
+	echo "$BLANK_LINE"
+}
+
+print_variable_console_output() {
+	echo "Rule Description: $RULE_DESCRIPTION"
+	echo "Rule Action: $RULE_ACTION"
+	echo "Rule Match: $RULE_MATCH"
+	echo "$BLANK_LINE"
+}
+
+print_no_rule_console_output() {
+	print_fixed_console_output
+	echo "No rules found"
+	echo "$BLANK_LINE"
+}
+
+parse_rule() {
     local RULE=$1
 
-    RULE_ACTION=$(echo "$RULE" | jq -rc '.action');
-    RULE_DESCRIPTION=$(echo "$RULE" | jq -rc '.description');
-	if [[ $CSV == "True" ]]; then
-    	RULE_MATCH=$(echo "$RULE" | jq -rc '.match' | sed 's/,/\\,/g');
-	else
-		RULE_MATCH=$(echo "$RULE" | jq -rc '.match');
-	fi;
+    RULE_ACTION=$(jq -rc '.action // ""' <<< "$RULE")
+    RULE_DESCRIPTION=$(jq -rc '.description // ""' <<< "$RULE")
+    
+    if [[ $CSV == "True" ]]; then
+        RULE_MATCH=$(jq -rc '.match // ""' <<< "$RULE" | sed 's/,/\\,/g')
+    else
+        RULE_MATCH=$(jq -rc '.match // ""' <<< "$RULE")
+    fi
 }
 
 function parse_cloud_armor_policy() {
     local CLOUD_ARMOR_POLICY_NAME="$1"
-
-	if [[ $CLOUD_ARMOR_POLICY_NAME == "" ]]; then
-		no_output_returned "No Cloud Armor policy associated with backend service $BACKEND_SERVICE_NAME";
-		return;
-	fi;
+	local POLICY_NAME="";
+	local POLICY_DDOS_PROTECTION_ENABLED="";
+	local POLICY_RULES="";
+    RULE_ACTION="";
+    RULE_DESCRIPTION="";
+	RULE_MATCH="";
 
 	local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe $CLOUD_ARMOR_POLICY_NAME --format="json")
 
-	debug_cloud_armor_policy "$CLOUD_ARMOR_POLICIES";
+	debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES";
     
     if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
+		print_no_rule_console_output
 		no_output_returned "No Cloud Armor policy associated with backend service $BACKEND_SERVICE_NAME";
 	else
 		echo "$CLOUD_ARMOR_POLICIES" | jq -r -c '.[]' | while IFS='' read -r CLOUD_ARMOR_POLICY; do
@@ -69,72 +119,55 @@ function parse_cloud_armor_policy() {
 			local POLICY_RULES=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.rules');
 
 			if [[ $CSV == "True" ]]; then
-
 				# Append CSV for each policy rule
 				echo "$POLICY_RULES" | jq -r -c '.[]' | while IFS='' read -r RULE; do
 					parse_rule "$RULE";
-					echo \"$PROJECT_ID\", \"$BACKEND_SERVICE_NAME\", \"$BACKEND_SERVICE_DESCRIPTION\", \"$BACKEND_SERVICE_PORT\", \"$BACKEND_SERVICE_PORT_NAME\", \"$BACKEND_SERVICE_PROTOCOL\", \"$BACKEND_SERVICE_SECURITY_POLICY\", \"$BACKEND_SERVICE_USED_BY\", \"$POLICY_NAME\", \"$POLICY_DDOS_PROTECTION_ENABLED\", \"$RULE_DESCRIPTION\", \"$RULE_ACTION\", \"$RULE_MATCH\";
+					print_csv_output;
 				done;
 			else
 				# Print regular output
-				echo "Project ID: $PROJECT_ID"
-				echo "Backend Service Name: $BACKEND_SERVICE_NAME"
-				echo "Backend Service Description: $BACKEND_SERVICE_DESCRIPTION"
-				echo "Backend Service Port: $BACKEND_SERVICE_PORT"
-				echo "Backend Service Port Name: $BACKEND_SERVICE_PORT_NAME"
-				echo "Backend Service Protocol: $BACKEND_SERVICE_PROTOCOL"
-				echo "Backend Service Security Policy: $BACKEND_SERVICE_SECURITY_POLICY"
-				echo "Backend Service Used By: $BACKEND_SERVICE_USED_BY"
-				echo "Cloud Armor Policy Name: $POLICY_NAME";
-				echo "DDoS Protection Enabled: $POLICY_DDOS_PROTECTION_ENABLED";
-				echo "Cloud Armor Policy Rules:";
+				print_fixed_console_output;
 				echo "$POLICY_RULES" | jq -r -c '.[]' | while IFS='' read -r RULE; do
 					parse_rule "$RULE";
-					echo $BLANK_LINE;
-					echo "Rule Description: $RULE_DESCRIPTION";
-					echo "Rule Action: $RULE_ACTION";
-					echo "Rule Match: $RULE_MATCH";
+					print_variable_console_output;
 				done;
-				echo $BLANK_LINE;
 			fi;
 		done;
     fi;
 }
 
-function parse_load_balancer() {
+parse_load_balancer() {
 	local HTTP_LOAD_BALANCER=$1
 
-	HTTP_LOAD_BALANCER_NAME=$(echo "$HTTP_LOAD_BALANCER" | jq -r -c '.name');
-	HTTP_LOAD_BALANCER_KIND=$(echo "$HTTP_LOAD_BALANCER" | jq -r -c '.kind');
-	HTTP_LOAD_BALANCER_URL_MAP=$(echo "$HTTP_LOAD_BALANCER" | jq -r -c '.urlMap | split("/") | .[-1] // ""');
+	HTTP_LOAD_BALANCER_NAME=$(jq -r -c '.name // ""' <<< "$HTTP_LOAD_BALANCER")
+	HTTP_LOAD_BALANCER_KIND=$(jq -r -c '.kind // ""' <<< "$HTTP_LOAD_BALANCER")
+	HTTP_LOAD_BALANCER_URL_MAP=$(jq -r -c '.urlMap | split("/") | .[-1] // ""' <<< "$HTTP_LOAD_BALANCER")
 }
 
-function get_url_map() {
+get_url_map() {
 	local URL_MAP_NAME=$1
 
-	URL_MAP=$(gcloud compute url-maps describe "$URL_MAP_NAME" --format="json" 2>/dev/null || echo "");
+	URL_MAP=$(gcloud compute url-maps describe "$URL_MAP_NAME" --format="json" || echo "")
 }
 
 parse_url_map() {
-	local URL_MAP=$1
+    local URL_MAP=$1
 
-	URL_MAP_NAME="";
-	URL_MAP_DEFAULT_SERVICE="";
-
-	if [[ $URL_MAP == "" ]]; then
-		no_output_returned "No URL Map associated with HTTP Load Balancer $HTTP_LOAD_BALANCER_NAME";
-	else
-		URL_MAP_NAME=$(echo "$URL_MAP" | jq -r -c '.name');
-		URL_MAP_DEFAULT_SERVICE=$(echo "$URL_MAP" | jq -r -c '.defaultService // ""' | awk -F '/' '{print $NF}');
-	fi;
+    if [[ $URL_MAP == "" ]]; then
+        URL_MAP_NAME=""
+        URL_MAP_DEFAULT_SERVICE=""
+        no_output_returned "No URL Map associated with HTTP Load Balancer $HTTP_LOAD_BALANCER_NAME";
+    else
+        URL_MAP_NAME=$(echo "$URL_MAP" | jq -r -c '.name');
+        URL_MAP_DEFAULT_SERVICE=$(echo "$URL_MAP" | jq -r -c '.defaultService // ""' | awk -F '/' '{print $NF}');
+    fi;
 }
 
 function get_backend_service() {
 	local BACKEND_SERVICE_NAME=$1
 
-	BACKEND_SERVICE="";
-
 	if [[ $BACKEND_SERVICE_NAME == "" ]]; then
+		BACKEND_SERVICE="";
 		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
 	else
 		BACKEND_SERVICE=$(gcloud compute backend-services describe $BACKEND_SERVICE_NAME --format="json");
@@ -144,71 +177,61 @@ function get_backend_service() {
 function parse_backend_service() {
 	local BACKEND_SERVICE=$1
 
-	BACKEND_SERVICE_NAME="";
-	BACKEND_SERVICE_DESCRIPTION="";
-	BACKEND_SERVICE_PORT="";
-	BACKEND_SERVICE_PORT_NAME="";
-	BACKEND_SERVICE_PROTOCOL="";
-	BACKEND_SERVICE_SECURITY_POLICY="";
-	BACKEND_SERVICE_USED_BY="";
-
 	if [[ $BACKEND_SERVICE == "" ]]; then
+		BACKEND_SERVICE_NAME="";
+		BACKEND_SERVICE_DESCRIPTION="";
+		BACKEND_SERVICE_PORT="";
+		BACKEND_SERVICE_PORT_NAME="";
+		BACKEND_SERVICE_PROTOCOL="";
+		BACKEND_SERVICE_SECURITY_POLICY="";
+		BACKEND_SERVICE_USED_BY="";
 		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
 	else
-		BACKEND_SERVICE_NAME=$(echo "$BACKEND_SERVICE" | jq -r -c '.name // ""');
-		BACKEND_SERVICE_DESCRIPTION=$(echo "$BACKEND_SERVICE" | jq -r -c '.description // ""');
-		BACKEND_SERVICE_PORT=$(echo "$BACKEND_SERVICE" | jq -r -c '.port // ""');
-		BACKEND_SERVICE_PORT_NAME=$(echo "$BACKEND_SERVICE" | jq -r -c '.portName // ""');
-		BACKEND_SERVICE_PROTOCOL=$(echo "$BACKEND_SERVICE" | jq -r -c '.protocol // ""');
-		BACKEND_SERVICE_SECURITY_POLICY=$(echo "$BACKEND_SERVICE" | jq -r -c '.securityPolicy | split("/") | .[-1] // ""');
-		BACKEND_SERVICE_USED_BY=$(echo "$BACKEND_SERVICE" | jq -r -c '.usedBy[0].reference | split("/") | .[-1] // ""');
+		BACKEND_SERVICE_NAME=$(jq -r -c '.name // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_DESCRIPTION=$(jq -r -c '.description // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_PORT=$(jq -r -c '.port // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_PORT_NAME=$(jq -r -c '.portName // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_PROTOCOL=$(jq -r -c '.protocol // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_SECURITY_POLICY=$(jq -r -c '.securityPolicy // ""' <<< "$BACKEND_SERVICE")
+		BACKEND_SERVICE_USED_BY=$(jq -r -c '.usedBy[0].reference | split("/") | .[-1] // ""' <<< "$BACKEND_SERVICE")
 	fi;
 }
 
 get_load_balancers() {
+    local LOAD_BALANCER_TYPE=$1
+    local PROJECT_ID=$2
+    local LOAD_BALANCERS=""
+
+    if [[ $LOAD_BALANCER_TYPE == "HTTP" ]]; then
+        LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json" || echo "")
+    elif [[ $LOAD_BALANCER_TYPE == "HTTPS" ]]; then
+        LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json" || echo "")
+    fi
+
+    echo "$LOAD_BALANCERS"
+}
+
+parse_load_balancers() {
 	local LOAD_BALANCER_TYPE=$1
 	local PROJECT_ID=$2
+	local LOAD_BALANCERS=$3
 
-	local LOAD_BALANCERS
-
-	if [[ $LOAD_BALANCER_TYPE == "HTTP" ]]; then
-		LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json");
-	elif [[ $LOAD_BALANCER_TYPE == "HTTPS" ]]; then
-		LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json");
-	fi;
-
-	echo "$LOAD_BALANCERS"
-}
-
-debug_load_balancers() {
-	local LOAD_BALANCER_TYPE=$1
-	local LOAD_BALANCERS=$2
-
-	if [[ $DEBUG == "True" ]]; then
-		echo "DEBUG: $LOAD_BALANCER_TYPE Load Balancers (JSON):";
-		echo "$(jq -C '.' <<< "$LOAD_BALANCERS")";
-	fi;
-}
-
-parse_load_balancers () {
-	local LOAD_BALANCER_TYPE=$1
-	local HTTP_LOAD_BALANCERS=$2
-
-	if [[ $HTTP_LOAD_BALANCERS == "[]" ]]; then
-		no_output_returned "No $LOAD_BALANCER_TYPE Load Balancer associated with project $PROJECT_ID";
+	if [[ $LOAD_BALANCERS == "[]" ]]; then
+		no_output_returned "No $LOAD_BALANCER_TYPE Load Balancer associated with project $PROJECT_ID"
 	else
-		echo "$HTTP_LOAD_BALANCERS" | jq -r -c '.[]' | while IFS='' read -r HTTP_LOAD_BALANCER; do
-			debug_load_balancer "$HTTP_LOAD_BALANCER";
-			parse_load_balancer "$HTTP_LOAD_BALANCER";
-			get_url_map "$HTTP_LOAD_BALANCER_URL_MAP";
-			debug_url_map "$URL_MAP";
-			parse_url_map "$URL_MAP";
-			get_backend_service "$URL_MAP_DEFAULT_SERVICE";
-			debug_backend_service "$BACKEND_SERVICE";
-			parse_backend_service "$BACKEND_SERVICE";
-			parse_cloud_armor_policy "$BACKEND_SERVICE_SECURITY_POLICY";
-		done;
-	fi;
+		echo "$LOAD_BALANCERS" | jq -r -c '.[]' | while IFS='' read -r LOAD_BALANCER; do
+			debug_json "$LOAD_BALANCER_TYPE Load Balancer" "$PROJECT_ID" "$LOAD_BALANCER"
+			parse_load_balancer "$LOAD_BALANCER"
+			get_url_map "$HTTP_LOAD_BALANCER_URL_MAP"
+			debug_json "URL Map" "$PROJECT_ID" "$URL_MAP"
+			parse_url_map "$URL_MAP"
+			get_backend_service "$URL_MAP_DEFAULT_SERVICE"
+			debug_json "Backend Service" "$PROJECT_ID" "$BACKEND_SERVICE"
+			parse_backend_service "$BACKEND_SERVICE"
+			parse_cloud_armor_policy "$BACKEND_SERVICE_SECURITY_POLICY"
+			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES"
+		done
+	fi
 }
 
 declare DEBUG="False";
@@ -266,13 +289,13 @@ for PROJECT_ID in $PROJECTS; do
 
 	# Call the function to get HTTP load balancers for a specific project
 	HTTP_LOAD_BALANCERS=$(get_load_balancers "HTTP" "$PROJECT_ID")
-	debug_json "HTTP" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
-	parse_load_balancers "HTTP Load Balancers" "$HTTP_LOAD_BALANCERS";
+	debug_json "HTTP Load Balancers" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
+	parse_load_balancers "HTTP" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS";
 	
 	# Call the function to get HTTPS load balancers for a specific project
 	HTTPS_LOAD_BALANCERS=$(get_load_balancers "HTTPS" "$PROJECT_ID")
 	debug_json "HTTPS Load Balancers" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS";
-	parse_load_balancers "HTTPS" "$HTTPS_LOAD_BALANCERS";
+	parse_load_balancers "HTTPS" "$PROJECT_ID" "$HTTPS_LOAD_BALANCERS";
 
     sleep $SLEEP_SECONDS;
 done;
