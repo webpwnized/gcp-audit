@@ -200,6 +200,27 @@ function parse_backend_service() {
 	fi;
 }
 
+get_load_balancers() {
+	local LOAD_BALANCER_TYPE=$1
+	local PROJECT_ID=$2
+
+	if [[ $LOAD_BALANCER_TYPE == "HTTP" ]]; then
+		HTTP_LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json");
+	elif [[ $LOAD_BALANCER_TYPE == "HTTPS" ]]; then
+		HTTPS_LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json");
+	fi;
+}
+
+debug_load_balancers() {
+	local LOAD_BALANCER_TYPE=$1
+	local LOAD_BALANCERS=$2
+
+	if [[ $DEBUG == "True" ]]; then
+		echo "DEBUG: $LOAD_BALANCER_TYPE Load Balancers (JSON):";
+		echo "$(jq -C '.' <<< "$LOAD_BALANCERS")";
+	fi;
+}
+
 parse_load_balancers () {
 	local LOAD_BALANCER_TYPE=$1
 	local HTTP_LOAD_BALANCERS=$2
