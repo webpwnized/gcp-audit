@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Function to log error to file
+log_error() {
+    local ERROR_MESSAGE="$1"
+    local CURRENT_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+    echo "[$CURRENT_TIME] ERROR: $ERROR_MESSAGE" >> "$ERROR_LOG_FILE"
+}
+
 api_enabled(){
 
 	local API_NAME=$1;

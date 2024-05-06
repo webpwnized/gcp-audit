@@ -116,7 +116,7 @@ function parse_cloud_armor_policy() {
 		no_output_returned "No Cloud Armor policies associated with backend service $BACKEND_SERVICE_NAME";
 		return
 	else
-		local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe "$CLOUD_ARMOR_POLICY_NAME" --format="json" || echo "")
+		local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe "$CLOUD_ARMOR_POLICY_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
 		debug_json "Cloud Armor Policies" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES";
 	fi
 
@@ -163,7 +163,7 @@ parse_load_balancer() {
 get_url_map() {
 	local URL_MAP_NAME=$1
 
-	URL_MAP=$(gcloud compute url-maps describe "$URL_MAP_NAME" --format="json" || echo "")
+	URL_MAP=$(gcloud compute url-maps describe "$URL_MAP_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
 }
 
 parse_url_map() {
@@ -191,7 +191,7 @@ function get_backend_service() {
 		BACKEND_SERVICE="";
 		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
 	else
-		BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" || echo "");
+		BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "");
 	fi;
 }
 
@@ -224,9 +224,9 @@ get_load_balancers() {
     local LOAD_BALANCERS=""
 
     if [[ $LOAD_BALANCER_TYPE == "HTTP" ]]; then
-        LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json" || echo "")
+        LOAD_BALANCERS=$(gcloud compute target-http-proxies list --project $PROJECT_ID --quiet --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
     elif [[ $LOAD_BALANCER_TYPE == "HTTPS" ]]; then
-        LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json" || echo "")
+        LOAD_BALANCERS=$(gcloud compute target-https-proxies list --project $PROJECT_ID --quiet --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
     fi
 
     echo "$LOAD_BALANCERS"
