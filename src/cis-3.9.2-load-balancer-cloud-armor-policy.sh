@@ -365,3 +365,6 @@ for PROJECT_ID in $PROJECTS; do
     sleep $SLEEP_SECONDS
 
 done
+
+# Delete error log file if empty
+delete_empty_error_log "$ERROR_LOG_FILE"
