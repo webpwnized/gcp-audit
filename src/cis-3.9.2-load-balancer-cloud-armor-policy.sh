@@ -108,7 +108,7 @@ parse_rule() {
         RULE_MATCH=$(jq -rc '.match // ""' <<< "$RULE")
     fi
 
-	if [[ $RULE_ACTION == "deny(403)" && $RULE_MATCH == *"evaluatePreconfiguredExpr"* ]]; then
+	if [[ $RULE_ACTION == "deny(403)" && ($RULE_MATCH == *"evaluatePreconfiguredExpr"* || $RULE_MATCH == *"evaluatePreconfiguredWaf"*) ]]; then
         VIOLATION_NO_OWASP_CRS_RULESET="False"
     fi
 }
