@@ -35,33 +35,20 @@ function no_output_returned() {
 print_csv_header() {
 	if [[ $CSV == "True" ]]; then
 		# Print CSV header row
-		echo "\"PROJECT_ID\", \"HTTP_LOAD_BALANCER_NAME\", \"HTTP_LOAD_BALANCER_KIND\", \"URL_MAP_NAME\", \"BACKEND_SERVICE_NAME\", \"BACKEND_SERVICE_DESCRIPTION\", \"BACKEND_SERVICE_PORT\", \"BACKEND_SERVICE_PORT_NAME\", \"BACKEND_SERVICE_PROTOCOL\", \"BACKEND_SERVICE_SECURITY_POLICY\", \"BACKEND_SERVICE_USED_BY\", \"POLICY_NAME\", \"POLICY_DDOS_PROTECTION_ENABLED\", \"RULE_DESCRIPTION\", \"RULE_ACTION\", \"RULE_MATCH\"";
+		echo "\"PROJECT_ID\", \"HTTP_LOAD_BALANCER_NAME\", \"HTTP_LOAD_BALANCER_KIND\",\"URL_MAP_IS_REDIRECT\",\"VIOLATION_NO_CLOUD_ARMOR_POLICY\", \"URL_MAP_NAME\", \"BACKEND_SERVICE_NAME\", \"BACKEND_SERVICE_DESCRIPTION\", \"BACKEND_SERVICE_PORT\", \"BACKEND_SERVICE_PORT_NAME\", \"BACKEND_SERVICE_PROTOCOL\", \"BACKEND_SERVICE_SECURITY_POLICY\", \"BACKEND_SERVICE_USED_BY\", \"POLICY_NAME\", \"POLICY_DDOS_PROTECTION_ENABLED\", \"RULE_DESCRIPTION\", \"RULE_ACTION\", \"RULE_MATCH\"";
 	fi;
 }
 
 print_csv_output() {
-	echo "\"$PROJECT_ID\",
-	\"$HTTP_LOAD_BALANCER_NAME\",
-	\"$HTTP_LOAD_BALANCER_KIND\",
-	\"$URL_MAP_NAME\",
-	\"$BACKEND_SERVICE_NAME\",
-	\"$BACKEND_SERVICE_DESCRIPTION\",
-	\"$BACKEND_SERVICE_PORT\",
-	\"$BACKEND_SERVICE_PORT_NAME\",
-	\"$BACKEND_SERVICE_PROTOCOL\",
-	\"$BACKEND_SERVICE_SECURITY_POLICY\",
-	\"$BACKEND_SERVICE_USED_BY\",
-	\"$POLICY_NAME\",
-	\"$POLICY_DDOS_PROTECTION_ENABLED\",
-	\"$RULE_DESCRIPTION\",
-	\"$RULE_ACTION\",
-	\"$RULE_MATCH\"";
+	echo "\"$PROJECT_ID\",\"$HTTP_LOAD_BALANCER_NAME\",\"$HTTP_LOAD_BALANCER_KIND\",\"$URL_MAP_IS_REDIRECT\",\"$VIOLATION_NO_CLOUD_ARMOR_POLICY\",\"$URL_MAP_NAME\",\"$BACKEND_SERVICE_NAME\",\"$BACKEND_SERVICE_DESCRIPTION\",\"$BACKEND_SERVICE_PORT\",\"$BACKEND_SERVICE_PORT_NAME\",\"$BACKEND_SERVICE_PROTOCOL\",\"$BACKEND_SERVICE_SECURITY_POLICY\",\"$BACKEND_SERVICE_USED_BY\",\"$POLICY_NAME\",\"$POLICY_DDOS_PROTECTION_ENABLED\",\"$RULE_DESCRIPTION\",\"$RULE_ACTION\",\"$RULE_MATCH\"";
 }
 
 print_fixed_console_output() {
 	echo "Project ID: $PROJECT_ID"
 	echo "HTTP Load Balancer Name: $HTTP_LOAD_BALANCER_NAME"
 	echo "HTTP Load Balancer Kind: $HTTP_LOAD_BALANCER_KIND"
+	echo "URL Map is Redirect: $URL_MAP_IS_REDIRECT"
+	echo "Cloud Armor Policy Present: $VIOLATION_NO_CLOUD_ARMOR_POLICY"
 	echo "URL Map Name: $URL_MAP_NAME"
 	echo "Backend Service Name: $BACKEND_SERVICE_NAME"
 	echo "Backend Service Description: $BACKEND_SERVICE_DESCRIPTION"
@@ -83,7 +70,15 @@ print_variable_console_output() {
 	echo "$BLANK_LINE"
 }
 
-print_no_rule_console_output() {
+print_no_rules_output() {
+	if [[ $CSV == "True" ]]; then
+		print_csv_output
+	else
+		print_no_rules_console_output
+	fi
+}
+
+print_no_rules_console_output() {
 	print_fixed_console_output
 	echo "No rules found"
 	echo "$BLANK_LINE"
@@ -107,12 +102,17 @@ function parse_cloud_armor_policy() {
 	local POLICY_NAME="";
 	local POLICY_DDOS_PROTECTION_ENABLED="";
 	local POLICY_RULES="";
+	local CLOUD_ARMOR_POLICIES="[]";
     RULE_ACTION="";
     RULE_DESCRIPTION="";
 	RULE_MATCH="";
+	VIOLATION_NO_CLOUD_ARMOR_POLICY="False";
 
     if [[ $CLOUD_ARMOR_POLICY_NAME == "" ]]; then
-		print_no_rule_console_output
+		if [[ $URL_MAP_IS_REDIRECT != "True" ]]; then
+			VIOLATION_NO_CLOUD_ARMOR_POLICY="True";
+		fi
+		print_no_rules_output
 		no_output_returned "No Cloud Armor policies associated with backend service $BACKEND_SERVICE_NAME";
 		return
 	else
@@ -121,15 +121,18 @@ function parse_cloud_armor_policy() {
 	fi
 
 	if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
-		print_no_rule_console_output
+		if [[ $URL_MAP_IS_REDIRECT != "True" ]]; then
+			VIOLATION_NO_CLOUD_ARMOR_POLICY="True";
+		fi
+		print_no_rules_output
 		no_output_returned "No Cloud Armor policies associated with cloud armor policy $CLOUD_ARMOR_POLICY_NAME";
 	else
 		echo "$CLOUD_ARMOR_POLICIES" | jq -r -c '.[]' | while IFS='' read -r CLOUD_ARMOR_POLICY; do
 			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICY";
 
-			local POLICY_NAME=$(jq -r -e '.name // ""' <<< "$CLOUD_ARMOR_POLICY" || echo "")
-			local POLICY_DDOS_PROTECTION_ENABLED=$(jq -r -e '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable // "false"' <<< "$CLOUD_ARMOR_POLICY" || echo "false")
-			local POLICY_RULES=$(jq -r -e '.rules // "[]"' <<< "$CLOUD_ARMOR_POLICY" || echo "[]")
+			POLICY_NAME=$(jq -r -e '.name // ""' <<< "$CLOUD_ARMOR_POLICY" || echo "")
+			POLICY_DDOS_PROTECTION_ENABLED=$(jq -r -e '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable // "false"' <<< "$CLOUD_ARMOR_POLICY" || echo "false")
+			POLICY_RULES=$(jq -r -e '.rules // "[]"' <<< "$CLOUD_ARMOR_POLICY" || echo "[]")
 
 			if [[ $CSV == "True" ]]; then
 				# Append CSV for each policy rule
@@ -169,10 +172,15 @@ parse_url_map() {
     if [[ -z $URL_MAP ]]; then
         URL_MAP_NAME=""
         URL_MAP_DEFAULT_SERVICE=""
+		URL_MAP_IS_REDIRECT="False"
         no_output_returned "No URL Map associated with HTTP Load Balancer $HTTP_LOAD_BALANCER_NAME"
     else
         URL_MAP_NAME=$(jq -r -c '.name // ""' <<< "$URL_MAP")
         URL_MAP_DEFAULT_SERVICE=$(jq -r -c '.defaultService // ""' <<< "$URL_MAP")
+		URL_MAP_IS_REDIRECT=$(jq -r '.defaultUrlRedirect.httpsRedirect // "False"' <<< "$URL_MAP" || echo "False")
+		if [[ $URL_MAP_IS_REDIRECT == "true" ]]; then
+			URL_MAP_IS_REDIRECT="True"
+		fi
     fi
 }
 
