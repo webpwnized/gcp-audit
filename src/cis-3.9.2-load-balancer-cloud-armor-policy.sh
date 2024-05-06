@@ -191,7 +191,13 @@ function get_backend_service() {
 		BACKEND_SERVICE="";
 		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
 	else
-		BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "");
+		SERVICE_TYPE=$(echo "$BACKEND_SERVICE_NAME" | awk -F'/' '{print $(NF-1)}')
+
+		if [[ "$SERVICE_TYPE" != "backendBuckets" ]]; then
+			BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "");
+		else
+			BACKEND_SERVICE="";
+		fi
 	fi;
 }
 
