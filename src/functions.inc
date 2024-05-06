@@ -7,6 +7,17 @@ log_error() {
     echo "[$CURRENT_TIME] ERROR: $ERROR_MESSAGE" >> "$ERROR_LOG_FILE"
 }
 
+# Function to delete $ERROR_LOG_FILE if it is empty
+delete_empty_error_log() {
+    local ERROR_LOG_FILE="$1"
+
+    # Check if $ERROR_LOG_FILE is empty
+    if [[ ! -s "$ERROR_LOG_FILE" ]]; then
+        # Delete the file if it's empty
+        rm -f "$ERROR_LOG_FILE"
+    fi
+}
+
 api_enabled(){
 
 	local API_NAME=$1;
