@@ -3,10 +3,11 @@
 source common-constants.inc;
 source functions.inc;
 
-function debug_projects() {
-	if [[ $DEBUG == "True" ]]; then
-		echo "DEBUG: Projects: $PROJECTS";
-	fi;
+debug_projects() {
+    if [[ $DEBUG == "True" ]]; then
+        echo "DEBUG: Projects: $PROJECTS"
+        echo "$BLANK_LINE"
+    fi
 }
 
 debug_json() {
@@ -18,6 +19,7 @@ debug_json() {
 		echo "PROJECT: $PROJECT_ID:"
 		echo "DEBUG: $DATA_TYPE (JSON):"
 		echo "$(jq -C '.' <<< "$JSON_DATA")"
+		echo "$BLANK_LINE"
 	fi
 }
 
@@ -25,7 +27,8 @@ function no_output_returned() {
 	local MESSAGE=$1
 
 	if [[ $CSV != "True" ]]; then
-		echo $MESSAGE;
+		echo "$MESSAGE";
+		echo "$BLANK_LINE";
 	fi;
 }
 
@@ -124,9 +127,9 @@ function parse_cloud_armor_policy() {
 		echo "$CLOUD_ARMOR_POLICIES" | jq -r -c '.[]' | while IFS='' read -r CLOUD_ARMOR_POLICY; do
 			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICY";
 
-			local POLICY_NAME=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.name');
-			local POLICY_DDOS_PROTECTION_ENABLED=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable');
-			local POLICY_RULES=$(echo "$CLOUD_ARMOR_POLICY" | jq -r -c '.rules');
+			local POLICY_NAME=$(jq -r -e '.name // ""' <<< "$CLOUD_ARMOR_POLICY" || echo "")
+			local POLICY_DDOS_PROTECTION_ENABLED=$(jq -r -e '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable // "false"' <<< "$CLOUD_ARMOR_POLICY" || echo "false")
+			local POLICY_RULES=$(jq -r -e '.rules // "[]"' <<< "$CLOUD_ARMOR_POLICY" || echo "[]")
 
 			if [[ $CSV == "True" ]]; then
 				# Append CSV for each policy rule
@@ -151,7 +154,7 @@ parse_load_balancer() {
 
 	HTTP_LOAD_BALANCER_NAME=$(jq -r -c '.name // ""' <<< "$HTTP_LOAD_BALANCER")
 	HTTP_LOAD_BALANCER_KIND=$(jq -r -c '.kind // ""' <<< "$HTTP_LOAD_BALANCER")
-	HTTP_LOAD_BALANCER_URL_MAP=$(jq -r -c '.urlMap | split("/") | .[-1] // ""' <<< "$HTTP_LOAD_BALANCER")
+	HTTP_LOAD_BALANCER_URL_MAP=$(jq -r -c '.urlMap // ""' <<< "$HTTP_LOAD_BALANCER")
 }
 
 get_url_map() {
@@ -163,14 +166,14 @@ get_url_map() {
 parse_url_map() {
     local URL_MAP=$1
 
-    if [[ $URL_MAP == "" ]]; then
+    if [[ -z $URL_MAP ]]; then
         URL_MAP_NAME=""
         URL_MAP_DEFAULT_SERVICE=""
-        no_output_returned "No URL Map associated with HTTP Load Balancer $HTTP_LOAD_BALANCER_NAME";
+        no_output_returned "No URL Map associated with HTTP Load Balancer $HTTP_LOAD_BALANCER_NAME"
     else
-        URL_MAP_NAME=$(echo "$URL_MAP" | jq -r -c '.name');
-        URL_MAP_DEFAULT_SERVICE=$(echo "$URL_MAP" | jq -r -c '.defaultService // ""' | awk -F '/' '{print $NF}');
-    fi;
+        URL_MAP_NAME=$(jq -r -c '.name // ""' <<< "$URL_MAP")
+        URL_MAP_DEFAULT_SERVICE=$(jq -r -c '.defaultService // ""' <<< "$URL_MAP")
+    fi
 }
 
 function get_backend_service() {
@@ -297,7 +300,7 @@ for PROJECT_ID in $PROJECTS; do
         no_output_returned "Compute Engine API is not enabled for Project $PROJECT_ID."
         continue
     fi
-	
+
     # Get and parse HTTP load balancers
     HTTP_LOAD_BALANCERS=$(get_load_balancers "HTTP" "$PROJECT_ID")
     debug_json "HTTP Load Balancers" "$PROJECT_ID" "$HTTP_LOAD_BALANCERS"
