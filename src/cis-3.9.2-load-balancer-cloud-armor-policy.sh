@@ -1,8 +1,10 @@
 #!/bin/bash
 
-source common-constants.inc;
-source functions.inc;
+# Import common constants and functions
+source common-constants.inc
+source functions.inc
 
+# Function to print debug information about projects
 debug_projects() {
     if [[ $DEBUG == "True" ]]; then
         echo "DEBUG: Projects: $PROJECTS"
@@ -10,6 +12,7 @@ debug_projects() {
     fi
 }
 
+# Function to print debug information about JSON data
 debug_json() {
 	local DATA_TYPE=$1
 	local PROJECT_ID=$2
@@ -23,26 +26,30 @@ debug_json() {
 	fi
 }
 
+# Function to print a message when no output is returned
 function no_output_returned() {
 	local MESSAGE=$1
 
 	if [[ $CSV != "True" ]]; then
-		echo "$MESSAGE";
-		echo "$BLANK_LINE";
-	fi;
+		echo "$MESSAGE"
+		echo "$BLANK_LINE"
+	fi
 }
 
+# Function to print the CSV header row
 print_csv_header() {
 	if [[ $CSV == "True" ]]; then
 		# Print CSV header row
-		echo "\"PROJECT_ID\",\"HTTP_LOAD_BALANCER_NAME\",\"HTTP_LOAD_BALANCER_KIND\",\"URL_MAP_IS_REDIRECT\",\"VIOLATION_NO_CLOUD_ARMOR_POLICY\",\"URL_MAP_NAME\",\"BACKEND_SERVICE_NAME\",\"BACKEND_SERVICE_DESCRIPTION\",\"BACKEND_SERVICE_PORT\",\"BACKEND_SERVICE_PORT_NAME\",\"BACKEND_SERVICE_PROTOCOL\",\"BACKEND_SERVICE_SECURITY_POLICY\",\"BACKEND_SERVICE_USED_BY\",\"POLICY_NAME\",\"POLICY_DDOS_PROTECTION_ENABLED\",\"RULE_DESCRIPTION\",\"RULE_ACTION\",\"RULE_MATCH\"";
-	fi;
+		echo "\"PROJECT_ID\",\"HTTP_LOAD_BALANCER_NAME\",\"HTTP_LOAD_BALANCER_KIND\",\"URL_MAP_IS_REDIRECT\",\"VIOLATION_NO_CLOUD_ARMOR_POLICY\",\"URL_MAP_NAME\",\"BACKEND_SERVICE_NAME\",\"BACKEND_SERVICE_DESCRIPTION\",\"BACKEND_SERVICE_PORT\",\"BACKEND_SERVICE_PORT_NAME\",\"BACKEND_SERVICE_PROTOCOL\",\"BACKEND_SERVICE_SECURITY_POLICY\",\"BACKEND_SERVICE_USED_BY\",\"POLICY_NAME\",\"POLICY_DDOS_PROTECTION_ENABLED\",\"RULE_DESCRIPTION\",\"RULE_ACTION\",\"RULE_MATCH\""
+	fi
 }
 
+# Function to print CSV output
 print_csv_output() {
-	echo "\"$PROJECT_ID\",\"$HTTP_LOAD_BALANCER_NAME\",\"$HTTP_LOAD_BALANCER_KIND\",\"$URL_MAP_IS_REDIRECT\",\"$VIOLATION_NO_CLOUD_ARMOR_POLICY\",\"$URL_MAP_NAME\",\"$BACKEND_SERVICE_NAME\",\"$BACKEND_SERVICE_DESCRIPTION\",\"$BACKEND_SERVICE_PORT\",\"$BACKEND_SERVICE_PORT_NAME\",\"$BACKEND_SERVICE_PROTOCOL\",\"$BACKEND_SERVICE_SECURITY_POLICY\",\"$BACKEND_SERVICE_USED_BY\",\"$POLICY_NAME\",\"$POLICY_DDOS_PROTECTION_ENABLED\",\"$RULE_DESCRIPTION\",\"$RULE_ACTION\",\"$RULE_MATCH\"";
+	echo "\"$PROJECT_ID\",\"$HTTP_LOAD_BALANCER_NAME\",\"$HTTP_LOAD_BALANCER_KIND\",\"$URL_MAP_IS_REDIRECT\",\"$VIOLATION_NO_CLOUD_ARMOR_POLICY\",\"$URL_MAP_NAME\",\"$BACKEND_SERVICE_NAME\",\"$BACKEND_SERVICE_DESCRIPTION\",\"$BACKEND_SERVICE_PORT\",\"$BACKEND_SERVICE_PORT_NAME\",\"$BACKEND_SERVICE_PROTOCOL\",\"$BACKEND_SERVICE_SECURITY_POLICY\",\"$BACKEND_SERVICE_USED_BY\",\"$POLICY_NAME\",\"$POLICY_DDOS_PROTECTION_ENABLED\",\"$RULE_DESCRIPTION\",\"$RULE_ACTION\",\"$RULE_MATCH\""
 }
 
+# Function to print fixed console output
 print_fixed_console_output() {
 	echo "Project ID: $PROJECT_ID"
 	echo "HTTP Load Balancer Name: $HTTP_LOAD_BALANCER_NAME"
@@ -63,6 +70,7 @@ print_fixed_console_output() {
 	echo "$BLANK_LINE"
 }
 
+# Function to print variable console output
 print_variable_console_output() {
 	echo "Rule Description: $RULE_DESCRIPTION"
 	echo "Rule Action: $RULE_ACTION"
@@ -70,6 +78,7 @@ print_variable_console_output() {
 	echo "$BLANK_LINE"
 }
 
+# Function to print a message when no rules are found
 print_no_rules_output() {
 	if [[ $CSV == "True" ]]; then
 		print_csv_output
@@ -78,12 +87,14 @@ print_no_rules_output() {
 	fi
 }
 
+# Function to print console output when no rules are found
 print_no_rules_console_output() {
 	print_fixed_console_output
 	echo "No rules found"
 	echo "$BLANK_LINE"
 }
 
+# Function to parse a rule from JSON data
 parse_rule() {
     local RULE=$1
 
@@ -95,40 +106,46 @@ parse_rule() {
     else
         RULE_MATCH=$(jq -rc '.match // ""' <<< "$RULE")
     fi
+
+	if [[ $RULE_ACTION == "deny(403)" && $RULE_MATCH == *"evaluatePreconfiguredExpr"* ]]; then
+        VIOLATION_NO_CLOUD_ARMOR_POLICY="False"
+    fi
 }
 
+# Function to parse Cloud Armor policy details
 function parse_cloud_armor_policy() {
     local CLOUD_ARMOR_POLICY_NAME="$1"
-	local POLICY_NAME="";
-	local POLICY_DDOS_PROTECTION_ENABLED="";
-	local POLICY_RULES="";
-	local CLOUD_ARMOR_POLICIES="[]";
-    RULE_ACTION="";
-    RULE_DESCRIPTION="";
-	RULE_MATCH="";
-	VIOLATION_NO_CLOUD_ARMOR_POLICY="False";
+	local POLICY_NAME=""
+	local POLICY_DDOS_PROTECTION_ENABLED=""
+	local POLICY_RULES=""
+	local CLOUD_ARMOR_POLICIES="[]"
+    RULE_ACTION=""
+    RULE_DESCRIPTION=""
+	RULE_MATCH=""
+	VIOLATION_NO_CLOUD_ARMOR_POLICY="False"
+	VIOLATION_NO_OWASP_CRS_RULESET="True"
 
     if [[ $CLOUD_ARMOR_POLICY_NAME == "" ]]; then
 		if [[ $URL_MAP_IS_REDIRECT != "True" ]]; then
-			VIOLATION_NO_CLOUD_ARMOR_POLICY="True";
+			VIOLATION_NO_CLOUD_ARMOR_POLICY="True"
 		fi
 		print_no_rules_output
-		no_output_returned "No Cloud Armor policies associated with backend service $BACKEND_SERVICE_NAME";
+		no_output_returned "No Cloud Armor policies associated with backend service $BACKEND_SERVICE_NAME"
 		return
 	else
 		local CLOUD_ARMOR_POLICIES=$(gcloud compute security-policies describe "$CLOUD_ARMOR_POLICY_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
-		debug_json "Cloud Armor Policies" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES";
+		debug_json "Cloud Armor Policies" "$PROJECT_ID" "$CLOUD_ARMOR_POLICIES"
 	fi
 
 	if [[ $CLOUD_ARMOR_POLICIES == "[]" ]]; then
 		if [[ $URL_MAP_IS_REDIRECT != "True" ]]; then
-			VIOLATION_NO_CLOUD_ARMOR_POLICY="True";
+			VIOLATION_NO_CLOUD_ARMOR_POLICY="True"
 		fi
 		print_no_rules_output
-		no_output_returned "No Cloud Armor policies associated with cloud armor policy $CLOUD_ARMOR_POLICY_NAME";
+		no_output_returned "No Cloud Armor policies associated with cloud armor policy $CLOUD_ARMOR_POLICY_NAME"
 	else
 		echo "$CLOUD_ARMOR_POLICIES" | jq -r -c '.[]' | while IFS='' read -r CLOUD_ARMOR_POLICY; do
-			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICY";
+			debug_json "Cloud Armor Policy" "$PROJECT_ID" "$CLOUD_ARMOR_POLICY"
 
 			POLICY_NAME=$(jq -r -e '.name // ""' <<< "$CLOUD_ARMOR_POLICY" || echo "")
 			POLICY_DDOS_PROTECTION_ENABLED=$(jq -r -e '.adaptiveProtectionConfig.layer7DdosDefenseConfig.enable // "false"' <<< "$CLOUD_ARMOR_POLICY" || echo "false")
@@ -137,21 +154,22 @@ function parse_cloud_armor_policy() {
 			if [[ $CSV == "True" ]]; then
 				# Append CSV for each policy rule
 				echo "$POLICY_RULES" | jq -r -c '.[]' | while IFS='' read -r RULE; do
-					parse_rule "$RULE";
-					print_csv_output;
-				done;
+					parse_rule "$RULE"
+					print_csv_output
+				done
 			else
 				# Print regular output
-				print_fixed_console_output;
+				print_fixed_console_output
 				echo "$POLICY_RULES" | jq -r -c '.[]' | while IFS='' read -r RULE; do
-					parse_rule "$RULE";
-					print_variable_console_output;
-				done;
-			fi;
-		done;
-    fi;
+					parse_rule "$RULE"
+					print_variable_console_output
+				done
+			fi
+		done
+    fi
 }
 
+# Function to parse details of a load balancer
 parse_load_balancer() {
 	local HTTP_LOAD_BALANCER=$1
 
@@ -160,12 +178,14 @@ parse_load_balancer() {
 	HTTP_LOAD_BALANCER_URL_MAP=$(jq -r -c '.urlMap // ""' <<< "$HTTP_LOAD_BALANCER")
 }
 
+# Function to retrieve the URL map details
 get_url_map() {
 	local URL_MAP_NAME=$1
 
 	URL_MAP=$(gcloud compute url-maps describe "$URL_MAP_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
 }
 
+# Function to parse details of a URL map
 parse_url_map() {
     local URL_MAP=$1
 
@@ -184,35 +204,37 @@ parse_url_map() {
     fi
 }
 
+# Function to retrieve details of a backend service
 function get_backend_service() {
 	local BACKEND_SERVICE_NAME=$1
 
 	if [[ $BACKEND_SERVICE_NAME == "" ]]; then
-		BACKEND_SERVICE="";
-		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
+		BACKEND_SERVICE=""
+		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME"
 	else
 		SERVICE_TYPE=$(echo "$BACKEND_SERVICE_NAME" | awk -F'/' '{print $(NF-1)}')
 
 		if [[ "$SERVICE_TYPE" != "backendBuckets" ]]; then
-			BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "");
+			BACKEND_SERVICE=$(gcloud compute backend-services describe "$BACKEND_SERVICE_NAME" --format="json" 2>> "$ERROR_LOG_FILE" || echo "")
 		else
-			BACKEND_SERVICE="";
+			BACKEND_SERVICE=""
 		fi
-	fi;
+	fi
 }
 
+# Function to parse details of a backend service
 function parse_backend_service() {
 	local BACKEND_SERVICE=$1
 
 	if [[ $BACKEND_SERVICE == "" ]]; then
-		BACKEND_SERVICE_NAME="";
-		BACKEND_SERVICE_DESCRIPTION="";
-		BACKEND_SERVICE_PORT="";
-		BACKEND_SERVICE_PORT_NAME="";
-		BACKEND_SERVICE_PROTOCOL="";
-		BACKEND_SERVICE_SECURITY_POLICY="";
-		BACKEND_SERVICE_USED_BY="";
-		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME";
+		BACKEND_SERVICE_NAME=""
+		BACKEND_SERVICE_DESCRIPTION=""
+		BACKEND_SERVICE_PORT=""
+		BACKEND_SERVICE_PORT_NAME=""
+		BACKEND_SERVICE_PROTOCOL=""
+		BACKEND_SERVICE_SECURITY_POLICY=""
+		BACKEND_SERVICE_USED_BY=""
+		no_output_returned "No Backend Service associated with URL Map $URL_MAP_NAME"
 	else
 		BACKEND_SERVICE_NAME=$(jq -r -c '.name // ""' <<< "$BACKEND_SERVICE")
 		BACKEND_SERVICE_DESCRIPTION=$(jq -r -c '.description // ""' <<< "$BACKEND_SERVICE")
@@ -221,9 +243,10 @@ function parse_backend_service() {
 		BACKEND_SERVICE_PROTOCOL=$(jq -r -c '.protocol // ""' <<< "$BACKEND_SERVICE")
 		BACKEND_SERVICE_SECURITY_POLICY=$(jq -r -c '.securityPolicy // ""' <<< "$BACKEND_SERVICE")
 		BACKEND_SERVICE_USED_BY=$(jq -r -c '.usedBy[0].reference | split("/") | .[-1] // ""' <<< "$BACKEND_SERVICE")
-	fi;
+	fi
 }
 
+# Function to retrieve the list of load balancers
 get_load_balancers() {
     local LOAD_BALANCER_TYPE=$1
     local PROJECT_ID=$2
@@ -238,6 +261,7 @@ get_load_balancers() {
     echo "$LOAD_BALANCERS"
 }
 
+# Function to parse details of load balancers
 parse_load_balancers() {
 	local LOAD_BALANCER_TYPE=$1
 	local PROJECT_ID=$2
@@ -260,14 +284,15 @@ parse_load_balancers() {
 	fi
 }
 
-declare DEBUG="False";
-declare CSV="False";
-declare PROJECT_ID="";
-declare PROJECTS="";
+# Parse command-line arguments
+declare DEBUG="False"
+declare CSV="False"
+declare PROJECT_ID=""
+declare PROJECTS=""
 declare HELP=$(cat << EOL
     $0 [-p, --project PROJECT] [-c, --csv] [-d, --debug] [-h, --help]
 EOL
-);
+)
 
 for arg in "$@"; do
   shift
@@ -280,36 +305,47 @@ for arg in "$@"; do
   esac
 done
 
+# Parse options and arguments
 while getopts "hdcip:" option; do 
     case "${option}" in
         p)
-            PROJECT_ID=${OPTARG};;
+            PROJECT_ID=${OPTARG}
+            ;;
         d)
-            DEBUG="True";;
+            DEBUG="True"
+            ;;
         c)
-            CSV="True";;
+            CSV="True"
+            ;;
         h)
-            echo $HELP; 
-            exit 0;;
-    esac;
-done;
+            echo $HELP 
+            exit 0
+            ;;
+    esac
+done
 
-declare PROJECTS=$(get_projects "$PROJECT_ID");
+# Get list of projects
+declare PROJECTS=$(get_projects "$PROJECT_ID")
 
+# If no projects found, exit
 if [[ $PROJECTS == "[]" ]]; then
-    echo "No projects found";
-    echo $BLANK_LINE;
-    exit 0;
-fi;
+    echo "No projects found"
+    echo $BLANK_LINE
+    exit 0
+fi
 
-debug_projects;
+# Print debug information about projects
+debug_projects
 
-print_csv_header;
+# Print CSV header row
+print_csv_header
 
+# Loop through each project
 for PROJECT_ID in $PROJECTS; do
 
 	set_project "$PROJECT_ID"
 
+    # Check if Compute Engine API is enabled
     if ! api_enabled compute.googleapis.com; then
         no_output_returned "Compute Engine API is not enabled for Project $PROJECT_ID."
         continue
