@@ -36,4 +36,20 @@ If you would like to use an Ubuntu virtual machine, [**install Ubuntu on Virtual
 
 3. If VirtualBox is not installed, [**install VirtualBox**](https://www.youtube.com/watch?v=61GhP8DsQMw).
 
+## Contributing
+
+Contributions are welcome! If you'd like to contribute to GCP Audit, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (\`git checkout -b feature/my-feature\`).
+3. Make your changes and commit them (\`git commit -am 'Add new feature'\`).
+4. Push to the branch (\`git push origin feature/my-feature\`).
+5. Create a new Pull Request.
+
+Please read our [Contribution Guidelines](CONTRIBUTING.md) for more details.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
 
