@@ -118,7 +118,7 @@ parse_rule() {
 
     # If CSV mode is enabled, escape commas in the match
     if [[ $CSV == "True" ]]; then
-        RULE_MATCH=$(echo "$MATCH" | sed 's/,/\\,/g')
+        RULE_MATCH=$(encode_double_quotes "$MATCH")
     fi
 
     # Check for OWASP CRS ruleset violation
@@ -275,7 +275,7 @@ function parse_backend_service() {
 
         # If CSV mode is enabled, escape commas in the description
         if [[ $CSV == "True" ]]; then
-            BACKEND_SERVICE_DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/,/\\,/g')
+            BACKEND_SERVICE_DESCRIPTION=$(encode_double_quotes "$DESCRIPTION")
         else
             BACKEND_SERVICE_DESCRIPTION="$DESCRIPTION"
         fi
@@ -331,21 +331,37 @@ declare HELP=$(cat << EOL
 EOL
 )
 
-# Parse options and arguments
-while getopts "hdcip:" option; do 
-    case "${option}" in
-        p)
-            PROJECT_ID=${OPTARG}
+# Parse options and arguments using getopt
+ARGS=$(getopt -o p:cdh --long project:,csv,debug,help -- "$@")
+
+eval set -- "$ARGS"
+
+while true; do
+    case "$1" in
+        -p|--project)
+            PROJECT_ID="$2"
+            shift 2
             ;;
-        d)
-            DEBUG="True"
-            ;;
-        c)
+        -c|--csv)
             CSV="True"
+            shift
             ;;
-        h)
-            echo $HELP 
+        -d|--debug)
+            DEBUG="True"
+            shift
+            ;;
+        -h|--help)
+            echo "$HELP"
             exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "$HELP"
+            exit 1
             ;;
     esac
 done

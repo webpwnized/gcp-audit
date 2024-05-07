@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Function to encode double quotes by doubling them
+encode_double_quotes() {
+    local input="$1"
+    echo "$input" | sed 's/"/""/g'
+}
+
 # Function to log error to file
 log_error() {
     local ERROR_MESSAGE="$1"
