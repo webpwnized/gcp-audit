@@ -55,7 +55,7 @@ function no_output_returned() {
 print_csv_header() {
     if [[ $CSV == "True" ]]; then
         # Print CSV header row
-        echo "\"PROJECT_ID\",\"FORWARDING_RULE_NAME\",\"FORWARDING_RULE_DESCRIPTION\",\"FORWARDING_RULE_IP\",\"FORWARDING_RULE_IP_PROTOCOL\",\"FORWARDING_RULE_PORT_RANGE\",\"FORWARDING_RULE_TARGET\",\"FORWARDING_RULE_TARGET_TYPE\",\"FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
+        echo "\"PROJECT_ID\",\"FORWARDING_RULE_NAME\",\"FORWARDING_RULE_DESCRIPTION\",\"FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"FORWARDING_RULE_IP\",\"FORWARDING_RULE_IP_PROTOCOL\",\"FORWARDING_RULE_PORT_RANGE\",\"FORWARDING_RULE_TARGET_TYPE\",\"FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
     fi
 }
 
@@ -69,7 +69,7 @@ output_forwarding_rule() {
 
 # Function to print CSV output
 print_csv_output() {
-    echo "\"$PROJECT_ID\",\"$FORWARDING_RULE_NAME\",\"$FORWARDING_RULE_DESCRIPTION\",\"$FORWARDING_RULE_IP\",\"$FORWARDING_RULE_IP_PROTOCOL\",\"$FORWARDING_RULE_PORT_RANGE\",\"$FORWARDING_RULE_TARGET\",\"$FORWARDING_RULE_TARGET_TYPE\",\"$FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
+    echo "\"$PROJECT_ID\",\"$FORWARDING_RULE_NAME\",\"$FORWARDING_RULE_DESCRIPTION\",\"$FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"$FORWARDING_RULE_IP\",\"$FORWARDING_RULE_IP_PROTOCOL\",\"$FORWARDING_RULE_PORT_RANGE\",\"$FORWARDING_RULE_TARGET_TYPE\",\"$FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
 }
 
 # Function to print fixed console output
@@ -77,10 +77,10 @@ print_fixed_console_output() {
     echo "Project ID: $PROJECT_ID"
     echo "Forwarding Rule Name: $FORWARDING_RULE_NAME"
     echo "Forwarding Rule Description: $FORWARDING_RULE_DESCRIPTION"
+    echo "Forwarding Rule Load Balancing Type: $FORWARDING_RULE_LOAD_BALANCER_TYPE"
     echo "Forwarding Rule IP: $FORWARDING_RULE_IP"
     echo "Forwarding Rule IP Protocol: $FORWARDING_RULE_IP_PROTOCOL"
     echo "Forwarding Rule Port Range: $FORWARDING_RULE_PORT_RANGE"
-    echo "Forwarding Rule Target: $FORWARDING_RULE_TARGET"
     echo "Forwarding Rule Target Type: $FORWARDING_RULE_TARGET_TYPE"
     echo "Forwarding Rule Load Balancing Scheme: $FORWARDING_RULE_LOAD_BALANCING_SCHEME"
     echo "$BLANK_LINE"
@@ -117,7 +117,7 @@ function parse_forwarding_rules() {
 function parse_forwarding_rule() {
     local PROJECT_ID=$1
     local FORWARDING_RULE=$2
-
+    
     # Parse forwarding rule details
     FORWARDING_RULE_NAME=$(jq -r -c '.name // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_DESCRIPTION=$(jq -r -c '.description // ""' <<< "$FORWARDING_RULE")
@@ -127,6 +127,79 @@ function parse_forwarding_rule() {
     FORWARDING_RULE_TARGET=$(jq -r -c '.target // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_TARGET_TYPE=$(echo "$FORWARDING_RULE_TARGET" | awk -F'/' '{print $(NF-1)}')
     FORWARDING_RULE_LOAD_BALANCING_SCHEME=$(jq -r -c '.loadBalancingScheme // ""' <<< "$FORWARDING_RULE")
+    FORWARDING_RULE_SCOPE=$(jq -r 'if has("region") then "Regional" else "Global" end' <<< "$FORWARDING_RULE")
+
+    FORWARDING_RULE_LOAD_BALANCER_TYPE=""
+
+    if [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "EXTERNAL_MANAGED" ]]; then
+        if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpsProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External HTTPS Application Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External HTTPS Application Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External HTTP Application Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External HTTP Application Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetSslProxies" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Proxy TLS Network Load Balancer"
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetTcpProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External Proxy TCP Network Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Proxy TCP Network Load Balancer"
+            fi
+        fi
+    elif [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "EXTERNAL" ]]; then
+        if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpsProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External Classic HTTPS Application Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Classic HTTPS Application Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External Classic HTTP Application Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Classic HTTP Application Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetSslProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External Classic TLS Network Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Classic TLS Network Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetTcpProxies" ]]; then
+            if [[ $FORWARDING_RULE_SCOPE == "Regional" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional External Classic TCP Network Load Balancer"
+            elif [[ $FORWARDING_RULE_SCOPE == "Global" ]]; then
+                FORWARDING_RULE_LOAD_BALANCER_TYPE="Global External Classic TCP Network Load Balancer"
+            fi
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "backendService" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="External Passthrough Network Load Balancer"
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetPools" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="External Passthrough Network Load Balancer"
+        fi
+    elif [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "INTERNAL_MANAGED" ]]; then
+        if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpsProxies" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional Internal HTTPS Application Load Balancer"
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpProxies" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional Internal HTTP Application Load Balancer"
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetTcpProxies" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional Internal TCP Load Balancer"
+        fi    
+    elif [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "INTERNAL" ]]; then
+        if [[ $FORWARDING_RULE_TARGET_TYPE == "backendService" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Regional Internal Passthrough Network Load Balancer"
+        fi
+    elif [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "INTERNAL_SELF_MANAGED" ]]; then
+        if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpProxy" || $FORWARDING_RULE_TARGET_TYPE == "targetGrpcProxy" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="Global Traffic Director"
+        fi
+    fi
 }
 
 # Parse command-line arguments
