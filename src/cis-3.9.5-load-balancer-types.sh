@@ -173,6 +173,8 @@ function parse_forwarding_rule() {
             FORWARDING_RULE_LOAD_BALANCER_TYPE="External Passthrough Network Load Balancer"
         elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetPools" ]]; then
             FORWARDING_RULE_LOAD_BALANCER_TYPE="External Passthrough Network Load Balancer"
+        elif [[ $FORWARDING_RULE_TARGET_TYPE == "targetVpnGateways" ]]; then
+            FORWARDING_RULE_LOAD_BALANCER_TYPE="VPN Gateway"
         fi
     elif [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "INTERNAL_MANAGED" ]]; then
         if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpsProxies" ]]; then
@@ -190,6 +192,10 @@ function parse_forwarding_rule() {
         if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpProxy" || $FORWARDING_RULE_TARGET_TYPE == "targetGrpcProxy" ]]; then
             FORWARDING_RULE_LOAD_BALANCER_TYPE="Global Traffic Director"
         fi
+    fi
+
+    if [[ $FORWARDING_RULE_TARGET_TYPE == "serviceAttachments" ]]; then
+        FORWARDING_RULE_LOAD_BALANCER_TYPE="Private Service Connect"
     fi
 }
 
@@ -268,7 +274,7 @@ for PROJECT_ID in $PROJECTS; do
     FORWARDING_RULES=$(get_forwarding_rules "$PROJECT_ID")
     debug_json "Forwarding Rules" "$PROJECT_ID" "$FORWARDING_RULES"
     parse_forwarding_rules "$PROJECT_ID" "$FORWARDING_RULES"
-    sleep $SLEEP_SECONDS
+    sleep "$SLEEP_SECONDS"
 
 done
 
