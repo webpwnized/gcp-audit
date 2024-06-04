@@ -19,43 +19,11 @@
 source common-constants.inc
 source functions.inc
 
-# Function to print debug information about projects
-debug_projects() {
-    if [[ $DEBUG == "True" ]]; then
-        echo "DEBUG: Projects: $PROJECTS"
-        echo "$BLANK_LINE"
-    fi
-}
-
-# Function to print debug information about JSON data
-debug_json() {
-    local DATA_TYPE=$1
-    local PROJECT_ID=$2
-    local JSON_DATA=$3
-
-    if [[ $DEBUG == "True" ]]; then
-        echo "PROJECT: $PROJECT_ID:"
-        echo "DEBUG: $DATA_TYPE (JSON):"
-        echo "$(jq -C '.' <<< "$JSON_DATA")"
-        echo "$BLANK_LINE"
-    fi
-}
-
-# Function to print a message when no output is returned
-function no_output_returned() {
-    local MESSAGE=$1
-
-    if [[ $CSV != "True" ]]; then
-        echo "$MESSAGE"
-        echo "$BLANK_LINE"
-    fi
-}
-
 # Function to print the CSV header row
 print_csv_header() {
     if [[ $CSV == "True" ]]; then
         # Print CSV header row
-        echo "\"PROJECT_ID\",\"FORWARDING_RULE_NAME\",\"FORWARDING_RULE_DESCRIPTION\",\"FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"FORWARDING_RULE_IP\",\"FORWARDING_RULE_IP_PROTOCOL\",\"FORWARDING_RULE_PORT_RANGE\",\"FORWARDING_RULE_TARGET_TYPE\",\"FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
+        echo "\"PROJECT_ID\",\"FORWARDING_RULE_NAME\",\"FORWARDING_RULE_DESCRIPTION\",\"FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"FORWARDING_RULE_TARGET_TYPE\",\"FORWARDING_RULE_LOAD_BALANCING_SCHEME\",\"FORWARDING_RULE_IP_PROTOCOL\",\"FORWARDING_RULE_IP\",\"FORWARDING_RULE_PORT_RANGE\""
     fi
 }
 
@@ -69,7 +37,7 @@ output_forwarding_rule() {
 
 # Function to print CSV output
 print_csv_output() {
-    echo "\"$PROJECT_ID\",\"$FORWARDING_RULE_NAME\",\"$FORWARDING_RULE_DESCRIPTION\",\"$FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"$FORWARDING_RULE_IP\",\"$FORWARDING_RULE_IP_PROTOCOL\",\"$FORWARDING_RULE_PORT_RANGE\",\"$FORWARDING_RULE_TARGET_TYPE\",\"$FORWARDING_RULE_LOAD_BALANCING_SCHEME\""
+    echo "\"$PROJECT_ID\",\"$FORWARDING_RULE_NAME\",\"$FORWARDING_RULE_DESCRIPTION\",\"$FORWARDING_RULE_LOAD_BALANCER_TYPE\",\"$FORWARDING_RULE_TARGET_TYPE\",\"$FORWARDING_RULE_LOAD_BALANCING_SCHEME\",\"$FORWARDING_RULE_IP_PROTOCOL\",\"$FORWARDING_RULE_IP\",\"$FORWARDING_RULE_PORT_RANGE\""
 }
 
 # Function to print fixed console output
@@ -78,11 +46,11 @@ print_fixed_console_output() {
     echo "Forwarding Rule Name: $FORWARDING_RULE_NAME"
     echo "Forwarding Rule Description: $FORWARDING_RULE_DESCRIPTION"
     echo "Forwarding Rule Load Balancing Type: $FORWARDING_RULE_LOAD_BALANCER_TYPE"
-    echo "Forwarding Rule IP: $FORWARDING_RULE_IP"
-    echo "Forwarding Rule IP Protocol: $FORWARDING_RULE_IP_PROTOCOL"
-    echo "Forwarding Rule Port Range: $FORWARDING_RULE_PORT_RANGE"
     echo "Forwarding Rule Target Type: $FORWARDING_RULE_TARGET_TYPE"
     echo "Forwarding Rule Load Balancing Scheme: $FORWARDING_RULE_LOAD_BALANCING_SCHEME"
+    echo "Forwarding Rule IP Protocol: $FORWARDING_RULE_IP_PROTOCOL"
+    echo "Forwarding Rule IP: $FORWARDING_RULE_IP"
+    echo "Forwarding Rule Port Range: $FORWARDING_RULE_PORT_RANGE"
     echo "$BLANK_LINE"
 }
 
@@ -124,12 +92,35 @@ function parse_forwarding_rule() {
     FORWARDING_RULE_IP=$(jq -r -c '.IPAddress // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_IP_PROTOCOL=$(jq -r -c '.IPProtocol // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_PORT_RANGE=$(jq -r -c '.portRange // ""' <<< "$FORWARDING_RULE")
-    FORWARDING_RULE_TARGET=$(jq -r -c '.target // ""' <<< "$FORWARDING_RULE")
-    FORWARDING_RULE_TARGET_TYPE=$(echo "$FORWARDING_RULE_TARGET" | awk -F'/' '{print $(NF-1)}')
     FORWARDING_RULE_LOAD_BALANCING_SCHEME=$(jq -r -c '.loadBalancingScheme // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_SCOPE=$(jq -r 'if has("region") then "Regional" else "Global" end' <<< "$FORWARDING_RULE")
 
-    FORWARDING_RULE_LOAD_BALANCER_TYPE=""
+    
+    FORWARDING_RULE_TARGET=$(jq -r '
+    if has("target") then
+        .target
+    elif has("backendService") then
+        .backendService
+    elif has("targetPool") then
+        .targetPool
+    else
+        ""
+    end
+    ' <<< "$FORWARDING_RULE")
+
+    FORWARDING_RULE_TARGET_TYPE=$(jq -r '
+    if has("target") then
+        .target | split("/") | .[-2]
+    elif has("backendService") then
+        "backendService"
+    elif has("targetPool") then
+        "targetPool"
+    else
+        "Unknown"
+    end
+    ' <<< "$FORWARDING_RULE")
+
+    FORWARDING_RULE_LOAD_BALANCER_TYPE="Unknown: Open an issue on GitHub"
 
     if [[ $FORWARDING_RULE_LOAD_BALANCING_SCHEME == "EXTERNAL_MANAGED" ]]; then
         if [[ $FORWARDING_RULE_TARGET_TYPE == "targetHttpsProxies" ]]; then

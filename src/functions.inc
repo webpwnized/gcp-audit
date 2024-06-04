@@ -1,5 +1,37 @@
 #!/bin/bash
 
+# Function to print debug information about projects
+debug_projects() {
+    if [[ $DEBUG == "True" ]]; then
+        echo "DEBUG: Projects: $PROJECTS"
+        echo "$BLANK_LINE"
+    fi
+}
+
+# Function to print debug information about JSON data
+debug_json() {
+    local DATA_TYPE=$1
+    local PROJECT_ID=$2
+    local JSON_DATA=$3
+
+    if [[ $DEBUG == "True" ]]; then
+        echo "PROJECT: $PROJECT_ID:"
+        echo "DEBUG: $DATA_TYPE (JSON):"
+        echo "$(jq -C '.' <<< "$JSON_DATA")"
+        echo "$BLANK_LINE"
+    fi
+}
+
+# Function to print a message when no output is returned
+function no_output_returned() {
+    local MESSAGE=$1
+
+    if [[ $CSV != "True" ]]; then
+        echo "$MESSAGE"
+        echo "$BLANK_LINE"
+    fi
+}
+
 # Function to encode double quotes by doubling them
 encode_double_quotes() {
     local input="$1"
