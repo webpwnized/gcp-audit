@@ -88,14 +88,15 @@ function parse_forwarding_rule() {
     
     # Parse forwarding rule details
     FORWARDING_RULE_NAME=$(jq -r -c '.name // ""' <<< "$FORWARDING_RULE")
-    FORWARDING_RULE_DESCRIPTION=$(jq -r -c '.description // ""' <<< "$FORWARDING_RULE")
+    FORWARDING_RULE_DESCRIPTION_UNENCODED=$(jq -r -c '.description // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_IP=$(jq -r -c '.IPAddress // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_IP_PROTOCOL=$(jq -r -c '.IPProtocol // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_PORT_RANGE=$(jq -r -c '.portRange // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_LOAD_BALANCING_SCHEME=$(jq -r -c '.loadBalancingScheme // ""' <<< "$FORWARDING_RULE")
     FORWARDING_RULE_SCOPE=$(jq -r 'if has("region") then "Regional" else "Global" end' <<< "$FORWARDING_RULE")
 
-    
+    FORWARDING_RULE_DESCRIPTION=$(encode_double_quotes "$FORWARDING_RULE_DESCRIPTION_UNENCODED")
+
     FORWARDING_RULE_TARGET=$(jq -r '
     if has("target") then
         .target
