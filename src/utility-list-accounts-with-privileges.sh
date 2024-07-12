@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source common-constants.inc;
+
 declare ROLE="owner";
 declare PROJECT_IDS="";
 declare DEBUG="False";

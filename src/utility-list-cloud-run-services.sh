@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source common-constants.inc;
 source functions.inc
 
 PROJECT_IDS="";

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source common-constants.inc;
+
 declare ORGANIZATION_IDS=$(gcloud organizations list --format="flattened(ID)" | grep id | cut -d " " -f 2 | cut -d "/" -f 2)
 
 for ORGANIZATION_ID in $ORGANIZATION_IDS; do

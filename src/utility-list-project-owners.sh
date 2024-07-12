@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source common-constants.inc
 source functions.inc
 
 declare RESULTS=$(gcloud projects list --format="json");
