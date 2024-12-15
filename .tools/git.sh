@@ -1,37 +1,62 @@
 #!/bin/bash
+# Purpose: Tag a Git commit with version and annotation, commit locally, and push to remote
+# Usage: ./git.sh <version> <annotation>
+# Description: This script tags a Git commit with the specified version and annotation,
+# commits locally, and pushes both the tag and commit to the remote repository.
 
-# Check if the correct number of arguments is provided
+# Function to print messages with a timestamp
+print_message() {
+    echo ""
+    echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
+}
+
+# Function to display help message
+show_help() {
+    echo "Usage: $0 <version> <annotation>"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help     Display this help message."
+    echo ""
+    echo "Description:"
+    echo "This script tags a Git commit with the specified version and annotation,"
+    echo "commits locally, and pushes both the tag and commit to the remote repository."
+    exit 0
+}
+
+# Function to handle errors
+handle_error() {
+    print_message "Error: $1"
+}
+
+# Parse options
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help) show_help ;;
+        *) break ;;
+    esac
+    shift
+done
+
+# Check if exactly two arguments are passed
 if (( $# != 2 )); then
-    printf "%b" "Usage: git.sh <version> <annotation>\n" >&2
-    exit 1
+    handle_error "Incorrect number of arguments. Usage: $0 <version> <annotation>"
 fi
 
-# Assign command-line arguments to variables
-VERSION="$1"
-ANNOTATION="$2"
+# Assign arguments to variables
+VERSION=$1
+ANNOTATION=$2
 
-# Validate input
-if [[ -z "$VERSION" || -z "$ANNOTATION" ]]; then
-    echo "Error: Version and annotation cannot be empty."
-    exit 1
-fi
+# Tagging, committing, and pushing operations
+print_message "Creating tag $VERSION with annotation \"$ANNOTATION\""
+git tag -a "$VERSION" -m "$ANNOTATION" || handle_error "Failed to create tag"
 
-# Inform user about the tag creation
-echo "Creating tag $VERSION with annotation \"$ANNOTATION\""
-# Create annotated tag with version and annotation
-git tag -a "$VERSION" -m "$ANNOTATION"
+print_message "Committing version $VERSION to local branch"
+git commit -a -m "$VERSION $ANNOTATION" # || handle_error "Failed to commit changes"
 
-# Inform user about committing the version to the local branch
-echo "Committing version $VERSION to the local branch"
-# Commit version with annotation message
-git commit -a -m "$VERSION $ANNOTATION"
+print_message "Pushing tag $VERSION to upstream"
+git push --tag || handle_error "Failed to push tag to upstream"
 
-# Inform user about pushing the tag
-echo "Pushing tag $VERSION"
-# Push the created tag
-git push --tag
+print_message "Pushing version $VERSION to upstream"
+git push || handle_error "Failed to push changes to upstream"
 
-# Inform user about pushing the version to the upstream
-echo "Pushing version $VERSION to the upstream"
-# Push the committed changes to the upstream
-git push
+print_message "Script completed successfully"
