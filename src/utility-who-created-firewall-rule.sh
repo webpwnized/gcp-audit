@@ -40,9 +40,9 @@ FIREWALL_RULE_NAME=""
 DEBUG="False"
 CSV="False"
 FRESHNESS="100d"
-METHOD_NAMES="compute.firewalls.insert,v1.compute.firewalls.insert"
+METHOD_NAMES="compute.firewalls.insert,v1.compute.firewalls.insert,beta.compute.firewalls.insert"
 
-HELP=$(cat << EOL
+HELP=$(cat <<EOL
 Usage: $0 -p <PROJECT_ID> -f <FIREWALL_RULE_NAME> [options]
 
 Options:
@@ -50,10 +50,10 @@ Options:
   -f, --firewall-rule    The name of the firewall rule to investigate.
   -c, --csv              Output results in CSV format.
   -d, --debug            Enable debug output.
-  -F, --freshness        How far back in time to search logs (e.g. 400d, 48h). Default: 400d.
+  -F, --freshness        How far back in time to search logs (e.g. 400d, 48h). Default: $FRESHNESS.
   -m, --method-names     Comma-separated list of method names indicating firewall creation
-                         (e.g. "compute.firewalls.insert,v1.compute.firewalls.insert").
-                         Default: "compute.firewalls.insert,v1.compute.firewalls.insert"
+                         (e.g. compute.firewalls.insert,v1.compute.firewalls.insert).
+                         Default: $METHOD_NAMES
   -h, --help             Show this help message.
 EOL
 )
