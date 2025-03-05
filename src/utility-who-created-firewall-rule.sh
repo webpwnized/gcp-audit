@@ -51,8 +51,7 @@ Options:
   -c, --csv              Output results in CSV format.
   -d, --debug            Enable debug output.
   -F, --freshness        How far back in time to search logs (e.g. 400d, 48h). Default: $FRESHNESS.
-  -m, --method-names     Comma-separated list of method names indicating firewall creation
-                         (e.g. compute.firewalls.insert,v1.compute.firewalls.insert).
+  -m, --method-names     Comma-separated list of method names indicating firewall creation.
                          Default: $METHOD_NAMES
   -h, --help             Show this help message.
 EOL
