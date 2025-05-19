@@ -111,23 +111,23 @@ if [[ $PROJECTS != "[]" ]]; then
                             [[ "$PORTS" != "" ]] && PORT_LIST=($(echo "$PORTS" | jq -r '.[]'))
 
                             for port in "${PORT_LIST[@]}"; do
-                                case "$port" in
-                                    1-65535) VIOLATIONS+=("Allows all ports for protocol $PROTOCOL") ;;
-                                    21)      VIOLATIONS+=("Rule includes port 21/FTP") ;;
-                                    22)      [[ "$HAS_INTERNET_SOURCE" == "True"" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 22/SSH from non-RFC1918 source") ;;
-                                    23)      VIOLATIONS+=("Rule includes port 23/Telnet") ;;
-                                    25)      VIOLATIONS+=("Rule includes port 25/SMTP") ;;
-                                    80)      VIOLATIONS+=("Rule includes port 80/HTTP") ;;
-                                    110)     VIOLATIONS+=("Rule includes port 110/POP3") ;;
-                                    143)     VIOLATIONS+=("Rule includes port 143/IMAP") ;;
-                                    443)     VIOLATIONS+=("Rule includes port 443/HTTPS") ;;
-                                    3389)    [[ "$HAS_INTERNET_SOURCE" == "True" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 3389/RDP from non-RFC1918 source") ;;
-                                    1433)    VIOLATIONS+=("Rule includes port 1433/SQL Server") ;;
-                                    3306)    VIOLATIONS+=("Rule includes port 3306/MySQL") ;;
-                                    1521)    VIOLATIONS+=("Rule includes port 1521/Oracle") ;;
-                                    5432)    VIOLATIONS+=("Rule includes port 5432/PostgreSQL") ;;
-                                esac
-                            done
+								case "$port" in
+									1-65535) VIOLATIONS+=("Allows all ports for protocol $PROTOCOL") ;;
+									21)      VIOLATIONS+=("Rule includes port 21/FTP") ;;
+									22)      [[ "$HAS_INTERNET_SOURCE" == "True" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 22/SSH from non-RFC1918 source") ;;
+									23)      VIOLATIONS+=("Rule includes port 23/Telnet") ;;
+									25)      VIOLATIONS+=("Rule includes port 25/SMTP") ;;
+									80)      VIOLATIONS+=("Rule includes port 80/HTTP") ;;
+									110)     VIOLATIONS+=("Rule includes port 110/POP3") ;;
+									143)     VIOLATIONS+=("Rule includes port 143/IMAP") ;;
+									443)     VIOLATIONS+=("Rule includes port 443/HTTPS") ;;
+									3389)    [[ "$HAS_INTERNET_SOURCE" == "True" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 3389/RDP from non-RFC1918 source") ;;
+									1433)    VIOLATIONS+=("Rule includes port 1433/SQL Server") ;;
+									3306)    VIOLATIONS+=("Rule includes port 3306/MySQL") ;;
+									1521)    VIOLATIONS+=("Rule includes port 1521/Oracle") ;;
+									5432)    VIOLATIONS+=("Rule includes port 5432/PostgreSQL") ;;
+								esac
+							done
 
                             if [[ $CSV == "True" ]]; then
                                 for v in "${VIOLATIONS[@]}"; do
