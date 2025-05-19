@@ -1,166 +1,161 @@
 #!/bin/bash
 
-source common-constants.inc;
-source functions.inc;
+source common-constants.inc
+source functions.inc
+source ./standard-menu.inc
 
-PROJECT_IDS="";
-DEBUG="False";
-HELP=$(cat << EOL
-	$0 [-p, --project PROJECT] [-d, --debug] [-h, --help]	
-EOL
-);
+function csv_escape() {
+    local raw="$1"
+    printf '"%s"' "${raw//\"/\"\"}"
+}
 
-for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--help") 		set -- "$@" "-h" ;;
-    "--debug") 		set -- "$@" "-d" ;;
-    "--project")   	set -- "$@" "-p" ;;
-    *)        		set -- "$@" "$arg"
-  esac
-done
+function output_header() {
+    if [[ $CSV == "True" ]]; then
+        echo "\"Project ID\",\"Project Name\",\"Application\",\"Owner\",\"Rule Name\",\"Direction\",\"Protocols\",\"Ports\",\"Source Ranges\",\"Destination Ranges\",\"Logging Enabled\",\"Disabled\",\"Has Violation\",\"Violation\""
+    fi
+}
 
-while getopts "hdp:" option
-do 
-    case "${option}"
-        in
-        p)
-        	PROJECT_IDS=${OPTARG};;
-        d)
-        	DEBUG="True";;
-        h)
-        	echo $HELP; 
-        	exit 0;;
-    esac;
-done;
+function emit_csv() {
+    local violation="$1"
+    local has_violation="True"
 
-if [[ $PROJECT_IDS == "" ]]; then
-    declare PROJECT_IDS=$(get_projects);
-fi;
+    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
+        "$(csv_escape "${PROJECT_ID:-}")" \
+        "$(csv_escape "${PROJECT_NAME:-}")" \
+        "$(csv_escape "${PROJECT_APPLICATION:-}")" \
+        "$(csv_escape "${PROJECT_OWNER:-}")" \
+        "$(csv_escape "${NAME:-}")" \
+        "$(csv_escape "${DIRECTION:-}")" \
+        "$(csv_escape "${PROTOCOL:-}")" \
+        "$(csv_escape "${PORTS:-}")" \
+        "$(csv_escape "${SOURCE_RANGES:-}")" \
+        "$(csv_escape "${DEST_RANGES:-}")" \
+        "$(csv_escape "${LOG_CONFIG:-}")" \
+        "$(csv_escape "${DISABLED:-}")" \
+        "$(csv_escape "$has_violation")" \
+        "$(csv_escape "$violation")"
+}
 
-declare SEPARATOR="----------------------------------------------------------------------------------------";
+function is_non_rfc1918() {
+    local cidr="$1"
+    [[ "$cidr" =~ ^10\. ]] && return 1
+    [[ "$cidr" =~ ^192\.168\. ]] && return 1
+    [[ "$cidr" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. ]] && return 1
+    return 0
+}
 
-for PROJECT_ID in $PROJECT_IDS; do
+if [[ -z "$PROJECT_ID" ]]; then
+    PROJECTS=$(gcloud projects list --format="json")
+else
+    PROJECTS=$(gcloud projects list --format="json" --filter="name:$PROJECT_ID")
+fi
 
-	set_project $PROJECT_ID;
+if [[ $PROJECTS != "[]" ]]; then
+    output_header
 
-	if ! api_enabled compute.googleapis.com; then
-		echo "Compute Engine API is not enabled on Project $PROJECT_ID"
-		continue
-	fi
+    echo "$PROJECTS" | jq -rc '.[]' | while IFS='' read -r PROJECT; do
+        PROJECT_ID=$(echo "$PROJECT" | jq -r '.projectId')
+        set_project "$PROJECT_ID"
 
-	declare RESULTS=$(gcloud compute firewall-rules list --quiet --format="json");
+        if ! api_enabled compute.googleapis.com; then
+            [[ $CSV != "True" ]] && echo "Compute Engine API is not enabled on Project $PROJECT_ID"
+            continue
+        fi
 
-	if [[ $RESULTS != "[]" ]]; then
-		
-      		#Get project details
-      		get_project_details $PROJECT_ID
+        RESULTS=$(gcloud compute firewall-rules list --quiet --format="json" 2>/dev/null || echo "[]")
 
-		echo $SEPARATOR;
-		echo "Firewall rules for project $PROJECT_ID";
-		echo $BLANK_LINE;
-		
-		#Loop through each firewall rule in the project
-		echo $RESULTS | jq -r -c '.[]' | while IFS='' read -r FIREWALL_RULE;do
+        if [[ $RESULTS != "[]" ]]; then
+            get_project_details "$PROJECT_ID"
 
-			# Debugging output
-			if [[ $DEBUG == "True" ]]; then
-				echo $FIREWALL_RULE | jq '.';
-			fi;
+            echo "$RESULTS" | jq -rc '.[]' | while IFS='' read -r FIREWALL_RULE; do
+                NAME=$(echo "$FIREWALL_RULE" | jq -rc '.name // empty')
+                ALLOWED_PROTOCOLS=$(echo "$FIREWALL_RULE" | jq -rc '.allowed // empty')
+                DENIED_PROTOCOLS=$(echo "$FIREWALL_RULE" | jq -rc '.denied // empty')
+                DIRECTION=$(echo "$FIREWALL_RULE" | jq -rc '.direction // empty')
+                LOG_CONFIG=$(echo "$FIREWALL_RULE" | jq -rc '.logConfig.enable // empty')
+                SOURCE_RANGES=$(echo "$FIREWALL_RULE" | jq -rc '.sourceRanges // "null"')
+                DEST_RANGES=$(echo "$FIREWALL_RULE" | jq -rc '.destinationRanges // "null"')
+                DISABLED=$(echo "$FIREWALL_RULE" | jq -rc '.disabled // empty')
 
-			ALLOWED_PROTOCOLS_LABEL="";
-			DENIED_PROTOCOLS_LABEL="";
-		
-			NAME=$(echo $FIREWALL_RULE | jq -rc '.name');
-			ALLOWED_PROTOCOLS=$(echo $FIREWALL_RULE | jq -rc '.allowed');
-			DENIED_PROTOCOLS=$(echo $FIREWALL_RULE | jq -rc '.denied');
-			DIRECTION=$(echo $FIREWALL_RULE | jq -rc '.direction');
-			LOG_CONFIG=$(echo $FIREWALL_RULE | jq -rc '.logConfig.enable');
-			SOURCE_RANGES=$(echo $FIREWALL_RULE | jq -rc '.sourceRanges');
-			SOURCE_TAGS=$(echo $FIREWALL_RULE | jq -rc '.sourceTags');
-			DEST_RANGES=$(echo $FIREWALL_RULE | jq -rc '.destinationRanges');
-			DEST_TAGS=$(echo $FIREWALL_RULE | jq -rc '.sourceTags');
-			DISABLED=$(echo $FIREWALL_RULE | jq -rc '.disabled');
-			HAS_INTERNET_SOURCE=$(echo $SOURCE_RANGES | jq '.[]' | jq 'select(. | contains("0.0.0.0/0"))');
-			if [[ $ALLOWED_PROTOCOLS != "null" ]]; then ALLOWED_PROTOCOLS_LABEL="ALLOWED"; fi;
-			if [[ $DENIED_PROTOCOLS != "null" ]]; then DENIED_PROTOCOLS_LABEL="DENIED"; fi;
+                HAS_INTERNET_SOURCE=""
+                NON_RFC1918_SOURCES=()
 
-			# Print Project Information
-			echo "Name: $NAME ($DIRECTION $ALLOWED_PROTOCOLS_LABEL$DENIED_PROTOCOLS_LABEL)";
-			echo "Project Name: $PROJECT_NAME";
-			echo "Project Application: $PROJECT_APPLICATION";
-			echo "Project Owner: $PROJECT_OWNER";
+                if [[ "$SOURCE_RANGES" != "null" ]]; then
+                    echo "$SOURCE_RANGES" | jq -r '.[]' | while read -r src; do
+                        if [[ "$src" == "0.0.0.0/0" ]]; then
+                            HAS_INTERNET_SOURCE="True"
+                        fi
+                        if is_non_rfc1918 "$src"; then
+                            NON_RFC1918_SOURCES+=("$src")
+                        fi
+                    done
+                fi
 
-			# Print Firewall Rule Information
-			if [[ $ALLOWED_PROTOCOLS != "null" ]]; then echo "Allowed Protocols: $ALLOWED_PROTOCOLS"; fi;
-			if [[ $DENIED_PROTOCOLS != "null" ]]; then echo "Denied Protocols: $DENIED_PROTOCOLS"; fi;
-			if [[ $SOURCE_RANGES != "null" ]]; then echo "Source Ranges: $SOURCE_RANGES"; fi;
-			if [[ $SOURCE_TAGS != "null" ]]; then echo "Source Tags: $SOURCE_TAGS"; fi;
-			if [[ $DEST_RANGES != "null" ]]; then echo "Destination Ranges: $DEST_RANGES"; fi;
-			if [[ $DEST_TAGS != "null" ]]; then echo "Destination Tags: $DEST_TAGS"; fi;
-			if [[ $LOG_CONFIG != "null" ]]; then echo "Logging: $LOG_CONFIG"; fi;
-			if [[ $DISABLED != "null" ]]; then echo "Disabled: $DISABLED"; fi;
-								
-			# Calculate Logging Violations			
-			if [[ $LOG_CONFIG == "false" ]]; then
-				echo "VIOLATION: Firewall logging is not enabled";
-			fi;
+                VIOLATIONS=()
+                [[ "$LOG_CONFIG" == "false" ]] && VIOLATIONS+=("Firewall logging is not enabled")
 
-			# If the firewall rule allows ingress, investigate the rule
-			if [[ $DIRECTION == "INGRESS" ]]; then
-				# Calculate Ingress Violations
+                if [[ "$DIRECTION" == "INGRESS" ]]; then
+                    [[ "$NAME" == "default-allow-icmp" ]] && VIOLATIONS+=("Default ICMP rule implemented")
+                    [[ "$NAME" == "default-allow-ssh" ]] && VIOLATIONS+=("Default SSH rule implemented")
+                    [[ "$NAME" == "default-allow-rdp" ]] && VIOLATIONS+=("Default RDP rule implemented")
+                    [[ "$NAME" == "default-allow-internal" ]] && VIOLATIONS+=("Default Internal rule implemented")
 
-				# Check for default firewall rules, at least by name
-				if [[ $NAME == "default-allow-icmp" ]]; then echo "VIOLATION: Default ICMP rule implemented"; fi;
-				if [[ $NAME == "default-allow-ssh" ]]; then echo "VIOLATION: Default SSH rule implemented"; fi;
-				if [[ $NAME == "default-allow-rdp" ]]; then echo "VIOLATION: Default RDP rule implemented"; fi;			
-				if [[ $NAME == "default-allow-internal" ]]; then echo "VIOLATION: Default Internal rule implemented"; fi;			
+                    [[ "$DEST_RANGES" == "null" ]] && VIOLATIONS+=("Ingress rule lacks destination or target")
+                    [[ "$ALLOWED_PROTOCOLS" != "" && "$HAS_INTERNET_SOURCE" == "True" ]] && VIOLATIONS+=("Allows access from entire Internet")
 
-				# Check for ingress rules without a specific destination
-				if [[ $DEST_RANGES == "null" && $DEST_TAGS == "null" ]]; then echo "VIOLATION: An ingress firewall rule does not specify a destination or target"; fi;
-				
-				# Check for ingress rules that allow access from all IP addresses
-				if [[ $ALLOWED_PROTOCOLS_LABEL != "" && $HAS_INTERNET_SOURCE != "" ]]; then echo "VIOLATION: Allows acccess from entire Internet"; fi;
-				
-				# Parse the allowed protocols
-				if [[ $ALLOWED_PROTOCOLS != "null" ]]; then
-					echo $ALLOWED_PROTOCOLS | jq -r -c '.[]' | while IFS='' read -r ALLOWED_PROTOCOL;do
-						PROTOCOL=$(echo $ALLOWED_PROTOCOL | jq -rc '.IPProtocol');
-						PORTS=$(echo $ALLOWED_PROTOCOL | jq -rc '.ports');
-						ALL_PORTS="";
+                    if [[ "$ALLOWED_PROTOCOLS" != "" ]]; then
+                        echo "$ALLOWED_PROTOCOLS" | jq -rc '.[]?' | while IFS='' read -r ALLOWED_PROTOCOL; do
+                            PROTOCOL=$(echo "$ALLOWED_PROTOCOL" | jq -rc '.IPProtocol // "unknown"')
+                            PORTS=$(echo "$ALLOWED_PROTOCOL" | jq -rc '.ports // empty')
+                            PORT_LIST=()
+                            [[ "$PORTS" != "" ]] && PORT_LIST=($(echo "$PORTS" | jq -r '.[]'))
 
-						# Parse banned ports
-						if [[ $PORTS != "null" ]]; then
-							ALL_PORTS=$(echo $PORTS | jq '.[]' | jq -rc 'index("1-65535")');
-							ALLOWS_SSH=$(echo $PORTS | jq '.[]' | jq -rc 'index("22")');
-							ALLOWS_RDP=$(echo $PORTS | jq '.[]' | jq -rc 'index("3389")');
-							ALLOWS_HTTP=$(echo $PORTS | jq '.[]' | jq -rc 'index("80")');
-						fi;
-						if [[ $ALL_PORTS != "" ]]; then
-							echo "VIOLATION: An ingress firewall rule allows all ports for protocol $PROTOCOL";
-						fi;
-						if [[ "$ALLOWS_SSH" =~ ^[0-9]+$ ]]; then 
-							echo "VIOLATION: Rule includes port 22/SSH"; 
-						fi;
-						if [[ "$ALLOWS_RDP" =~ ^[0-9]+$ ]]; then 
-							echo "VIOLATION: Rule includes port 3389/RDP"; 
-						fi;
-						if [[ "$ALLOWS_HTTP" =~ ^[0-9]+$ ]]; then 
-							echo "VIOLATION: Rule includes port 80/HTTP"; 
-						fi;
-						if [[ $PROTOCOL != "tcp" && $PROTOCOL != "udp" && $PROTOCOL != "icmp" ]]; then
-							echo "VIOLATION: An ingress firewall rule allows suspicious protocol $PROTOCOL";
-						fi;
-					done;
-				fi;
-				echo $BLANK_LINE;
-			fi;
-		done;
-	else
-		echo $SEPARATOR;
-		echo "No firewall rules found for $PROJECT_ID";
-		echo $BLANK_LINE;
-	fi;
-	sleep $SLEEP_SECONDS;
-done;
+                            for port in "${PORT_LIST[@]}"; do
+                                case "$port" in
+                                    1-65535) VIOLATIONS+=("Allows all ports for protocol $PROTOCOL") ;;
+                                    21)      VIOLATIONS+=("Rule includes port 21/FTP") ;;
+                                    22)      [[ "$HAS_INTERNET_SOURCE" == "True"" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 22/SSH from non-RFC1918 source") ;;
+                                    23)      VIOLATIONS+=("Rule includes port 23/Telnet") ;;
+                                    25)      VIOLATIONS+=("Rule includes port 25/SMTP") ;;
+                                    80)      VIOLATIONS+=("Rule includes port 80/HTTP") ;;
+                                    110)     VIOLATIONS+=("Rule includes port 110/POP3") ;;
+                                    143)     VIOLATIONS+=("Rule includes port 143/IMAP") ;;
+                                    443)     VIOLATIONS+=("Rule includes port 443/HTTPS") ;;
+                                    3389)    [[ "$HAS_INTERNET_SOURCE" == "True" && "${#NON_RFC1918_SOURCES[@]}" -gt 0 ]] && VIOLATIONS+=("Port 3389/RDP from non-RFC1918 source") ;;
+                                    1433)    VIOLATIONS+=("Rule includes port 1433/SQL Server") ;;
+                                    3306)    VIOLATIONS+=("Rule includes port 3306/MySQL") ;;
+                                    1521)    VIOLATIONS+=("Rule includes port 1521/Oracle") ;;
+                                    5432)    VIOLATIONS+=("Rule includes port 5432/PostgreSQL") ;;
+                                esac
+                            done
 
+                            if [[ $CSV == "True" ]]; then
+                                for v in "${VIOLATIONS[@]}"; do
+                                    emit_csv "$v"
+                                done
+                            else
+                                echo "Project Name: $PROJECT_NAME"
+                                echo "Project Application: $PROJECT_APPLICATION"
+                                echo "Project Owner: $PROJECT_OWNER"
+                                echo "Name: $NAME ($DIRECTION)"
+                                echo "Allowed: $ALLOWED_PROTOCOLS"
+                                echo "Denied: $DENIED_PROTOCOLS"
+                                echo "Source Ranges: $SOURCE_RANGES"
+                                echo "Destination Ranges: $DEST_RANGES"
+                                echo "Logging: $LOG_CONFIG"
+                                echo "Disabled: $DISABLED"
+                                for v in "${VIOLATIONS[@]}"; do echo "VIOLATION: $v"; done
+                                echo
+                            fi
+                        done
+                    fi
+                fi
+            done
+        else
+            [[ $CSV != "True" ]] && echo "No firewall rules found for $PROJECT_ID" && echo
+        fi
+        sleep "${SLEEP_SECONDS:-2}"
+    done
+else
+    [[ $CSV != "True" ]] && echo "No projects found" && echo
+fi
