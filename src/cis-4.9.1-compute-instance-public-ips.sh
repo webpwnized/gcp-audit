@@ -94,7 +94,7 @@ if [[ $PROJECTS != "[]" ]]; then
 						NETWORK=$(echo $INTERFACE | jq -rc '.network' | awk -F/ '{print $(NF)}');
 						SUBNETWORK=$(echo $INTERFACE | jq -rc '.subnetwork' | awk -F/ '{print $(NF)}');
 						if [[ $IS_GKE_NODE == "false" ]]; then
-							EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Exterally routable IP address detected";
+							EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Externally routable IP address detected";
 						else
 							EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: GKE cluster is not a Private Kubernetes Cluster";
 						fi;

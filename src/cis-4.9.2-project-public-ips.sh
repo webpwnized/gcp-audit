@@ -113,7 +113,7 @@ if [[ $PROJECTS != "[]" ]]; then
 				EXTERNAL_IP_STATUS_MESSAGE="WARNING: The IP address is external but not in use at this time";
 			elif [[ $ADDRESS_TYPE == "EXTERNAL" ]]; then
 				DIRTY="True";
-				EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Exterally routable IP address detected";
+				EXTERNAL_IP_STATUS_MESSAGE="VIOLATION: Externally routable IP address detected";
 			else
 				DIRTY="False";
 				EXTERNAL_IP_STATUS_MESSAGE="Non-issue: The IP address cannot be routed externally";
