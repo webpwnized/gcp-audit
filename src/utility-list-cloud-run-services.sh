@@ -163,20 +163,21 @@ for PROJECT_ID in $PROJECT_IDS; do
             PUBLIC_CONTENT_TYPE="N/A";
             PUBLIC_REDIRECT_URL="N/A";
 
-            if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
+			if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
                 PUBLIC_HTTP_RESPONSE=$(curl \
                     --silent \
+                    --location \
                     --output /dev/null \
                     --connect-timeout 5 \
                     --max-time 15 \
-                    --write-out "%{http_code}|%{content_type}|%{redirect_url}" \
+                    --write-out "%{http_code}|%{content_type}|%{url_effective}" \
                     "https://$PUBLIC_HOSTNAME/");
 
                 PUBLIC_CURL_EXIT_CODE=$?;
 
                 if [[ $PUBLIC_CURL_EXIT_CODE -eq 0 ]]; then
                     PUBLIC_CONNECTION_STATUS="Connected";
-                    IFS='|' read -r PUBLIC_HTTP_STATUS PUBLIC_CONTENT_TYPE PUBLIC_REDIRECT_URL <<< "$PUBLIC_HTTP_RESPONSE";
+                    IFS='|' read -r PUBLIC_HTTP_STATUS PUBLIC_CONTENT_TYPE FINAL_PUBLIC_URL <<< "$PUBLIC_HTTP_RESPONSE";
                 else
                     PUBLIC_CONNECTION_STATUS="Connection Failed";
                 fi
@@ -194,25 +195,33 @@ for PROJECT_ID in $PROJECT_IDS; do
                 VIOLATIONS+=("$INGRESS_VIOLATION")
             fi
 
-            # 2. Native Cloud Run URL Exposure Check
-            # Exposed if direct connection succeeds and returns a 2xx or 3xx without auth redirect
-            if [[ $CONNECTION_STATUS == "Connected" && $HTTP_STATUS != "403" && $HTTP_STATUS != "401" ]]; then
-                if [[ $REDIRECT_URL != *"login.microsoftonline.com"* && $REDIRECT_URL != *"auth0.com"* ]]; then
-                    EXPOSED_URL_VIOLATION="Native Cloud Run URL ($SERVICE_URL) is publicly accessible"
-                    VIOLATIONS+=("$EXPOSED_URL_VIOLATION")
+			# 2. Native Cloud Run URL Exposure Check
+            # If ingress is set to internal/load-balancer, GCP edge blocks it (returning 404/403).
+            # It is ONLY exposed if ingress is ALL *or* direct URL returns an active HTTP 2xx/3xx response.
+            if [[ $INGRESS_SETTING == "all" ]]; then
+                if [[ $CONNECTION_STATUS == "Connected" ]]; then
+                    # Check if it returns an actual application response (2xx/3xx without auth redirect)
+                    if [[ $HTTP_STATUS =~ ^[23] ]] && [[ $REDIRECT_URL != *"login.microsoftonline.com"* && $REDIRECT_URL != *"auth0.com"* ]]; then
+                        EXPOSED_URL_VIOLATION="Native Cloud Run URL ($SERVICE_URL) is publicly accessible"
+                        VIOLATIONS+=("$EXPOSED_URL_VIOLATION")
+                    fi
                 fi
             fi
 
             # 3. Public Load Balancer Authentication Check
             AUTHENTICATION_STATUS="Unknown"
 
-            if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
-                if [[ $PUBLIC_REDIRECT_URL == *"login.microsoftonline.com"* ]]; then
+            if [[ $PUBLIC_HOSTNAME != "N/A" && $PUBLIC_CONNECTION_STATUS == "Connected" ]]; then
+                if [[ $FINAL_PUBLIC_URL == *"login.microsoftonline.com"* ]]; then
                     AUTHENTICATION_STATUS="Microsoft Entra Auth Required"
-                elif [[ $PUBLIC_REDIRECT_URL == *"auth0.com"* ]]; then
+                elif [[ $FINAL_PUBLIC_URL == *"auth0.com"* ]]; then
                     AUTHENTICATION_STATUS="Auth0 Auth Required"
                 elif [[ $PUBLIC_HTTP_STATUS == "401" || $PUBLIC_HTTP_STATUS == "403" ]]; then
                     AUTHENTICATION_STATUS="Access Denied (Authenticated/Restricted)"
+                elif [[ $FINAL_PUBLIC_URL == *"/login"* || $FINAL_PUBLIC_URL == *"/signin"* ]]; then
+                    AUTHENTICATION_STATUS="Non-Compliant (Custom/Local Form Auth)"
+                    AUTHENTICATION_VIOLATION="Public URL ($FINAL_PUBLIC_URL) uses custom/local authentication instead of Entra/Auth0"
+                    VIOLATIONS+=("$AUTHENTICATION_VIOLATION")
                 elif [[ $PUBLIC_HTTP_STATUS == "200" ]]; then
                     AUTHENTICATION_STATUS="Unauthenticated / Public Access"
                     AUTHENTICATION_VIOLATION="Public URL (https://$PUBLIC_HOSTNAME/) does not enforce authentication"
@@ -235,7 +244,7 @@ for PROJECT_ID in $PROJECT_IDS; do
             fi
 
             if [[ $CSV == "True" ]]; then
-                echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$PUBLIC_REDIRECT_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
+				echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
             else
                 echo "Service Name: $NAME";
                 echo "Service URL: $SERVICE_URL";
@@ -248,8 +257,8 @@ for PROJECT_ID in $PROJECT_IDS; do
                 echo "Public Connection Status: $PUBLIC_CONNECTION_STATUS";
                 echo "Public HTTP Status: $PUBLIC_HTTP_STATUS";
                 echo "Public Content Type: $PUBLIC_CONTENT_TYPE";
-                echo "Public Redirect URL: $PUBLIC_REDIRECT_URL";
-                
+				echo "Public Redirect URL: $FINAL_PUBLIC_URL";
+
                 if [[ $INGRESS_VIOLATION != "N/A" ]]; then
                     echo "Ingress Violation: $INGRESS_VIOLATION";
                 fi
