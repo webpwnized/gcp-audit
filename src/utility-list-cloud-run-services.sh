@@ -39,7 +39,7 @@ fi;
 
 # Print CSV header if CSV output is enabled
 if [[ $CSV == "True" ]]; then
-    echo '"PROJECT_ID", "SERVICE_NAME", "SERVICE_URL", "SERVICE_INGRESS_SETTING", "CONNECTION_STATUS", "HTTP_STATUS", "CONTENT_TYPE", "REDIRECT_URL", "PUBLIC_HOSTNAME", "PUBLIC_CONNECTION_STATUS", "PUBLIC_HTTP_STATUS", "PUBLIC_CONTENT_TYPE", "PUBLIC_REDIRECT_URL", "INGRESS_VIOLATION", "EXPOSED_URL_VIOLATION", "AUTHENTICATION_STATUS", "AUTHENTICATION_VIOLATION", "ALL_VIOLATIONS"';
+    echo '"PROJECT_ID", "SERVICE_NAME", "SERVICE_URL", "SERVICE_INGRESS_SETTING", "CONNECTION_STATUS", "HTTP_STATUS", "CONTENT_TYPE", "REDIRECT_URL", "PUBLIC_HOSTNAME", "PUBLIC_CONNECTION_STATUS", "PUBLIC_HTTP_STATUS", "PUBLIC_CONTENT_TYPE", "PUBLIC_REDIRECT_URL", "INGRESS_VIOLATION", "EXPOSED_URL_VIOLATION", "CERTIFICATE_VIOLATION", "AUTHENTICATION_STATUS", "AUTHENTICATION_VIOLATION", "ALL_VIOLATIONS"';
 fi
 
 for PROJECT_ID in $PROJECT_IDS; do  
@@ -158,36 +158,53 @@ for PROJECT_ID in $PROJECT_IDS; do
                 REDIRECT_URL="N/A";
             fi
 
+            # Reset Public Hostname Probe & Violation Variables
             PUBLIC_CONNECTION_STATUS="N/A";
             PUBLIC_HTTP_STATUS="N/A";
             PUBLIC_CONTENT_TYPE="N/A";
-            PUBLIC_REDIRECT_URL="N/A";
+            FINAL_PUBLIC_URL="N/A";
+            PUBLIC_BODY="";
 
-			if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
+            INGRESS_VIOLATION="N/A";
+            EXPOSED_URL_VIOLATION="N/A";
+            CERTIFICATE_VIOLATION="N/A";
+            AUTHENTICATION_VIOLATION="N/A";
+            AUTHENTICATION_STATUS="Unknown";
+            VIOLATIONS=();
+
+            if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
+                # 1. Test TLS Certificate Validity (Strict SSL Check)
+                curl --silent --output /dev/null --connect-timeout 5 --max-time 10 "https://$PUBLIC_HOSTNAME/"
+                STRICT_CURL_EXIT=$?
+
+                if [[ $STRICT_CURL_EXIT -eq 60 ]]; then
+                    CERTIFICATE_VIOLATION="Public endpoint uses an untrusted/private CA certificate instead of a public CA cert"
+                    VIOLATIONS+=("$CERTIFICATE_VIOLATION")
+                fi
+
+                # 2. Perform Content & Auth Probe (Bypassing SSL with -k so we can inspect the app)
                 PUBLIC_HTTP_RESPONSE=$(curl \
                     --silent \
+                    --insecure \
                     --location \
-                    --output /dev/null \
                     --connect-timeout 5 \
                     --max-time 15 \
-                    --write-out "%{http_code}|%{content_type}|%{url_effective}" \
+                    --write-out "\n%{http_code}|%{content_type}|%{url_effective}" \
                     "https://$PUBLIC_HOSTNAME/");
 
                 PUBLIC_CURL_EXIT_CODE=$?;
 
                 if [[ $PUBLIC_CURL_EXIT_CODE -eq 0 ]]; then
                     PUBLIC_CONNECTION_STATUS="Connected";
-                    IFS='|' read -r PUBLIC_HTTP_STATUS PUBLIC_CONTENT_TYPE FINAL_PUBLIC_URL <<< "$PUBLIC_HTTP_RESPONSE";
+                    PUBLIC_BODY=$(echo "$PUBLIC_HTTP_RESPONSE" | sed '$d')
+                    METRICS=$(echo "$PUBLIC_HTTP_RESPONSE" | tail -n 1)
+                    IFS='|' read -r PUBLIC_HTTP_STATUS PUBLIC_CONTENT_TYPE FINAL_PUBLIC_URL <<< "$METRICS";
                 else
                     PUBLIC_CONNECTION_STATUS="Connection Failed";
                 fi
             fi
 
-            # Reset violation tracking
-            INGRESS_VIOLATION="N/A"
-            EXPOSED_URL_VIOLATION="N/A"
-            AUTHENTICATION_VIOLATION="N/A"
-            VIOLATIONS=()
+            # --- VIOLATION EVALUATION LOGIC ---
 
             # 1. Ingress Violation Check
             if [[ $INGRESS_SETTING == "all" ]]; then
@@ -195,12 +212,9 @@ for PROJECT_ID in $PROJECT_IDS; do
                 VIOLATIONS+=("$INGRESS_VIOLATION")
             fi
 
-			# 2. Native Cloud Run URL Exposure Check
-            # If ingress is set to internal/load-balancer, GCP edge blocks it (returning 404/403).
-            # It is ONLY exposed if ingress is ALL *or* direct URL returns an active HTTP 2xx/3xx response.
+            # 2. Native Cloud Run URL Exposure Check
             if [[ $INGRESS_SETTING == "all" ]]; then
                 if [[ $CONNECTION_STATUS == "Connected" ]]; then
-                    # Check if it returns an actual application response (2xx/3xx without auth redirect)
                     if [[ $HTTP_STATUS =~ ^[23] ]] && [[ $REDIRECT_URL != *"login.microsoftonline.com"* && $REDIRECT_URL != *"auth0.com"* ]]; then
                         EXPOSED_URL_VIOLATION="Native Cloud Run URL ($SERVICE_URL) is publicly accessible"
                         VIOLATIONS+=("$EXPOSED_URL_VIOLATION")
@@ -209,8 +223,6 @@ for PROJECT_ID in $PROJECT_IDS; do
             fi
 
             # 3. Public Load Balancer Authentication Check
-            AUTHENTICATION_STATUS="Unknown"
-
             if [[ $PUBLIC_HOSTNAME != "N/A" && $PUBLIC_CONNECTION_STATUS == "Connected" ]]; then
                 if [[ $FINAL_PUBLIC_URL == *"login.microsoftonline.com"* ]]; then
                     AUTHENTICATION_STATUS="Microsoft Entra Auth Required"
@@ -218,9 +230,9 @@ for PROJECT_ID in $PROJECT_IDS; do
                     AUTHENTICATION_STATUS="Auth0 Auth Required"
                 elif [[ $PUBLIC_HTTP_STATUS == "401" || $PUBLIC_HTTP_STATUS == "403" ]]; then
                     AUTHENTICATION_STATUS="Access Denied (Authenticated/Restricted)"
-                elif [[ $FINAL_PUBLIC_URL == *"/login"* || $FINAL_PUBLIC_URL == *"/signin"* ]]; then
+                elif [[ $FINAL_PUBLIC_URL == *"/login"* || $FINAL_PUBLIC_URL == *"/signin"* || $PUBLIC_BODY == *"<app-root>"* || $PUBLIC_BODY == *"Platform"* ]]; then
                     AUTHENTICATION_STATUS="Non-Compliant (Custom/Local Form Auth)"
-                    AUTHENTICATION_VIOLATION="Public URL ($FINAL_PUBLIC_URL) uses custom/local authentication instead of Entra/Auth0"
+                    AUTHENTICATION_VIOLATION="Public URL (https://$PUBLIC_HOSTNAME/) renders a custom local application/login page instead of federating through Entra or Auth0"
                     VIOLATIONS+=("$AUTHENTICATION_VIOLATION")
                 elif [[ $PUBLIC_HTTP_STATUS == "200" ]]; then
                     AUTHENTICATION_STATUS="Unauthenticated / Public Access"
@@ -235,7 +247,7 @@ for PROJECT_ID in $PROJECT_IDS; do
                 fi
             fi
 
-            # Properly join all array elements into a single semicolon-separated string
+            # Join all triggered violations into a single string
             ALL_VIOLATIONS="None"
             if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then
                 IFS="; "
@@ -243,8 +255,9 @@ for PROJECT_ID in $PROJECT_IDS; do
                 unset IFS
             fi
 
+            # --- OUTPUT RENDERING ---
             if [[ $CSV == "True" ]]; then
-                echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
+                echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$CERTIFICATE_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
             else
                 echo "Project ID: $PROJECT_ID";
                 echo "Service Name: $NAME";
@@ -266,6 +279,10 @@ for PROJECT_ID in $PROJECT_IDS; do
 
                 if [[ $EXPOSED_URL_VIOLATION != "N/A" ]]; then
                     echo "Exposed URL Violation: $EXPOSED_URL_VIOLATION";
+                fi
+
+                if [[ $CERTIFICATE_VIOLATION != "N/A" ]]; then
+                    echo "Certificate Violation: $CERTIFICATE_VIOLATION";
                 fi
 
                 echo "Authentication Status: $AUTHENTICATION_STATUS";
