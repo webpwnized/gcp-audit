@@ -244,8 +244,9 @@ for PROJECT_ID in $PROJECT_IDS; do
             fi
 
             if [[ $CSV == "True" ]]; then
-				echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
+                echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
             else
+                echo "Project ID: $PROJECT_ID";
                 echo "Service Name: $NAME";
                 echo "Service URL: $SERVICE_URL";
                 echo "Service Ingress Setting: $INGRESS_SETTING";
@@ -257,7 +258,7 @@ for PROJECT_ID in $PROJECT_IDS; do
                 echo "Public Connection Status: $PUBLIC_CONNECTION_STATUS";
                 echo "Public HTTP Status: $PUBLIC_HTTP_STATUS";
                 echo "Public Content Type: $PUBLIC_CONTENT_TYPE";
-				echo "Public Redirect URL: $FINAL_PUBLIC_URL";
+                echo "Public Redirect URL: $FINAL_PUBLIC_URL";
 
                 if [[ $INGRESS_VIOLATION != "N/A" ]]; then
                     echo "Ingress Violation: $INGRESS_VIOLATION";
