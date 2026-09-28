@@ -39,12 +39,20 @@ fi;
 
 # Print CSV header if CSV output is enabled
 if [[ $CSV == "True" ]]; then
-    echo '"PROJECT_ID", "SERVICE_NAME", "SERVICE_URL", "SERVICE_INGRESS_SETTING", "CONNECTION_STATUS", "HTTP_STATUS", "CONTENT_TYPE", "REDIRECT_URL", "PUBLIC_HOSTNAME", "PUBLIC_CONNECTION_STATUS", "PUBLIC_HTTP_STATUS", "PUBLIC_CONTENT_TYPE", "PUBLIC_REDIRECT_URL", "INGRESS_VIOLATION", "EXPOSED_URL_VIOLATION", "CERTIFICATE_VIOLATION", "AUTHENTICATION_STATUS", "AUTHENTICATION_VIOLATION", "ALL_VIOLATIONS"';
+	echo '"PROJECT_ID", "PROJECT_OWNER", "PROJECT_APPLICATION", "SERVICE_NAME", "SERVICE_URL", "SERVICE_INGRESS_SETTING", "CONNECTION_STATUS", "HTTP_STATUS", "CONTENT_TYPE", "REDIRECT_URL", "PUBLIC_HOSTNAME", "PUBLIC_CONNECTION_STATUS", "PUBLIC_HTTP_STATUS", "PUBLIC_CONTENT_TYPE", "PUBLIC_REDIRECT_URL", "HAS_INGRESS_VIOLATION", "INGRESS_VIOLATION", "HAS_EXPOSED_URL_VIOLATION", "EXPOSED_URL_VIOLATION", "HAS_CERTIFICATE_VIOLATION", "CERTIFICATE_VIOLATION", "AUTHENTICATION_STATUS", "HAS_AUTHENTICATION_VIOLATION", "AUTHENTICATION_VIOLATION", "HAS_ANY_VIOLATION", "ALL_VIOLATIONS"';
 fi
 
 for PROJECT_ID in $PROJECT_IDS; do  
     set_project $PROJECT_ID;
-    
+
+	get_project_details "$PROJECT_ID";
+    if [[ -z "$PROJECT_OWNER" ]]; then
+        PROJECT_OWNER="N/A";
+    fi
+    if [[ -z "$PROJECT_APPLICATION" ]]; then
+        PROJECT_APPLICATION="N/A";
+    fi
+
     # Check if Cloud Run API is enabled for the project
     if ! api_enabled run.googleapis.com; then
         if [[ $CSV != "True" ]]; then
@@ -165,11 +173,19 @@ for PROJECT_ID in $PROJECT_IDS; do
             FINAL_PUBLIC_URL="N/A";
             PUBLIC_BODY="";
 
+            HAS_INGRESS_VIOLATION="FALSE"
             INGRESS_VIOLATION="N/A";
+
+            HAS_EXPOSED_URL_VIOLATION="FALSE"
             EXPOSED_URL_VIOLATION="N/A";
+
+            HAS_CERTIFICATE_VIOLATION="FALSE"
             CERTIFICATE_VIOLATION="N/A";
+
+            HAS_AUTHENTICATION_VIOLATION="FALSE"
             AUTHENTICATION_VIOLATION="N/A";
             AUTHENTICATION_STATUS="Unknown";
+
             VIOLATIONS=();
 
             if [[ $PUBLIC_HOSTNAME != "N/A" ]]; then
@@ -178,6 +194,7 @@ for PROJECT_ID in $PROJECT_IDS; do
                 STRICT_CURL_EXIT=$?
 
                 if [[ $STRICT_CURL_EXIT -eq 60 ]]; then
+                    HAS_CERTIFICATE_VIOLATION="TRUE"
                     CERTIFICATE_VIOLATION="Public endpoint uses an untrusted/private CA certificate instead of a public CA cert"
                     VIOLATIONS+=("$CERTIFICATE_VIOLATION")
                 fi
@@ -208,6 +225,7 @@ for PROJECT_ID in $PROJECT_IDS; do
 
             # 1. Ingress Violation Check
             if [[ $INGRESS_SETTING == "all" ]]; then
+                HAS_INGRESS_VIOLATION="TRUE"
                 INGRESS_VIOLATION="Ingress setting is ALL (Direct internet traffic permitted)"
                 VIOLATIONS+=("$INGRESS_VIOLATION")
             fi
@@ -216,6 +234,7 @@ for PROJECT_ID in $PROJECT_IDS; do
             if [[ $INGRESS_SETTING == "all" ]]; then
                 if [[ $CONNECTION_STATUS == "Connected" ]]; then
                     if [[ $HTTP_STATUS =~ ^[23] ]] && [[ $REDIRECT_URL != *"login.microsoftonline.com"* && $REDIRECT_URL != *"auth0.com"* ]]; then
+                        HAS_EXPOSED_URL_VIOLATION="TRUE"
                         EXPOSED_URL_VIOLATION="Native Cloud Run URL ($SERVICE_URL) is publicly accessible"
                         VIOLATIONS+=("$EXPOSED_URL_VIOLATION")
                     fi
@@ -232,24 +251,30 @@ for PROJECT_ID in $PROJECT_IDS; do
                     AUTHENTICATION_STATUS="Access Denied (Authenticated/Restricted)"
                 elif [[ $FINAL_PUBLIC_URL == *"/login"* || $FINAL_PUBLIC_URL == *"/signin"* || $PUBLIC_BODY == *"<app-root>"* || $PUBLIC_BODY == *"Platform"* ]]; then
                     AUTHENTICATION_STATUS="Non-Compliant (Custom/Local Form Auth)"
+                    HAS_AUTHENTICATION_VIOLATION="TRUE"
                     AUTHENTICATION_VIOLATION="Public URL (https://$PUBLIC_HOSTNAME/) renders a custom local application/login page instead of federating through Entra or Auth0"
                     VIOLATIONS+=("$AUTHENTICATION_VIOLATION")
                 elif [[ $PUBLIC_HTTP_STATUS == "200" ]]; then
                     AUTHENTICATION_STATUS="Unauthenticated / Public Access"
+                    HAS_AUTHENTICATION_VIOLATION="TRUE"
                     AUTHENTICATION_VIOLATION="Public URL (https://$PUBLIC_HOSTNAME/) does not enforce authentication"
                     VIOLATIONS+=("$AUTHENTICATION_VIOLATION")
                 fi
             else
                 if [[ $HTTP_STATUS == "200" && $REDIRECT_URL != *"login.microsoftonline.com"* && $REDIRECT_URL != *"auth0.com"* ]]; then
                     AUTHENTICATION_STATUS="Unauthenticated / Public Access"
+                    HAS_AUTHENTICATION_VIOLATION="TRUE"
                     AUTHENTICATION_VIOLATION="Service lacks a Load Balancer and does not enforce authentication"
                     VIOLATIONS+=("$AUTHENTICATION_VIOLATION")
                 fi
             fi
 
-            # Join all triggered violations into a single string
+            # Rollup flags and text array
+            HAS_ANY_VIOLATION="FALSE"
             ALL_VIOLATIONS="None"
+
             if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then
+                HAS_ANY_VIOLATION="TRUE"
                 IFS="; "
                 ALL_VIOLATIONS="${VIOLATIONS[*]}"
                 unset IFS
@@ -257,9 +282,11 @@ for PROJECT_ID in $PROJECT_IDS; do
 
             # --- OUTPUT RENDERING ---
             if [[ $CSV == "True" ]]; then
-                echo "\"$PROJECT_ID\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$INGRESS_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$CERTIFICATE_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$AUTHENTICATION_VIOLATION\", \"$ALL_VIOLATIONS\"";
+				echo "\"$PROJECT_ID\", \"$PROJECT_OWNER\", \"$PROJECT_APPLICATION\", \"$NAME\", \"$SERVICE_URL\", \"$INGRESS_SETTING\", \"$CONNECTION_STATUS\", \"$HTTP_STATUS\", \"$CONTENT_TYPE\", \"$REDIRECT_URL\", \"$PUBLIC_HOSTNAME\", \"$PUBLIC_CONNECTION_STATUS\", \"$PUBLIC_HTTP_STATUS\", \"$PUBLIC_CONTENT_TYPE\", \"$FINAL_PUBLIC_URL\", \"$HAS_INGRESS_VIOLATION\", \"$INGRESS_VIOLATION\", \"$HAS_EXPOSED_URL_VIOLATION\", \"$EXPOSED_URL_VIOLATION\", \"$HAS_CERTIFICATE_VIOLATION\", \"$CERTIFICATE_VIOLATION\", \"$AUTHENTICATION_STATUS\", \"$HAS_AUTHENTICATION_VIOLATION\", \"$AUTHENTICATION_VIOLATION\", \"$HAS_ANY_VIOLATION\", \"$ALL_VIOLATIONS\"";
             else
                 echo "Project ID: $PROJECT_ID";
+				echo "Project Owner: $PROJECT_OWNER";
+				echo "Project Application: $PROJECT_APPLICATION";
                 echo "Service Name: $NAME";
                 echo "Service URL: $SERVICE_URL";
                 echo "Service Ingress Setting: $INGRESS_SETTING";
@@ -273,24 +300,28 @@ for PROJECT_ID in $PROJECT_IDS; do
                 echo "Public Content Type: $PUBLIC_CONTENT_TYPE";
                 echo "Public Redirect URL: $FINAL_PUBLIC_URL";
 
+                echo "Has Ingress Violation: $HAS_INGRESS_VIOLATION";
                 if [[ $INGRESS_VIOLATION != "N/A" ]]; then
                     echo "Ingress Violation: $INGRESS_VIOLATION";
                 fi
 
+                echo "Has Exposed URL Violation: $HAS_EXPOSED_URL_VIOLATION";
                 if [[ $EXPOSED_URL_VIOLATION != "N/A" ]]; then
                     echo "Exposed URL Violation: $EXPOSED_URL_VIOLATION";
                 fi
 
+                echo "Has Certificate Violation: $HAS_CERTIFICATE_VIOLATION";
                 if [[ $CERTIFICATE_VIOLATION != "N/A" ]]; then
                     echo "Certificate Violation: $CERTIFICATE_VIOLATION";
                 fi
 
                 echo "Authentication Status: $AUTHENTICATION_STATUS";
-
+                echo "Has Authentication Violation: $HAS_AUTHENTICATION_VIOLATION";
                 if [[ $AUTHENTICATION_VIOLATION != "N/A" ]]; then
                     echo "Authentication Violation: $AUTHENTICATION_VIOLATION";
                 fi
 
+                echo "Has Any Violation: $HAS_ANY_VIOLATION";
                 echo "All Violations: $ALL_VIOLATIONS";
                 echo $BLANK_LINE;
             fi
